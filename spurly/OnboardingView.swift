@@ -163,7 +163,16 @@ struct TopicInputField: View {
     var label: String; @Binding var topics: [String]; var exclude: [String]; var allTopics: [String]; var isGreen: Bool
     @State private var newTopic = ""; @FocusState private var isTextFieldFocused: Bool; @State private var flowLayoutHeight: CGFloat = 30
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular); let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular); let placeholderText = "Add topic..."
-    private var flowItems: [TopicFlowItem] { topics.map { TopicFlowItem.chip($0) } + [TopicFlowItem.inputField] }
+    private var flowItems: [TopicFlowItem] {
+        let chipItems = topics.map { TopicFlowItem.chip($0) }
+
+        if topics.count < 5 {
+            return chipItems + [TopicFlowItem.inputField]
+        }
+        else {
+            return chipItems
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -242,17 +251,18 @@ struct TopicInputField: View {
 
 // MARK: - Custom Styles
 struct CustomTextFieldStyle: TextFieldStyle {
-    let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular)
+    @FocusState private var isFocused: Bool
+    let inputFont = Font.custom("SF Pro Text", size: 16).weight(.bold)
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration.font(inputFont).foregroundColor(.spurlyPrimaryText)
-            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.spurlySecondaryBackground).cornerRadius(8)
-            .opacity(1)
-    }
+            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.spurlySecondaryBackground).cornerRadius(12)
+            .opacity(1).focused($isFocused).onTapGesture { isFocused = false }
+     }
 }
 struct CustomPickerStyle<SelectionValue: Hashable>: View {
     let title: String; @Binding var selection: SelectionValue; let options: [SelectionValue]; let textMapping: (SelectionValue) -> String
     let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular); let placeholderColor = Color.spurlySecondaryText; let primaryColor = Color.spurlyPrimaryText
-    let backgroundColor = Color.spurlySecondaryBackground; let cornerRadius: CGFloat = 8; let paddingHorizontal: CGFloat = 12; let paddingVertical: CGFloat = 10; let minHeight: CGFloat
+    let backgroundColor = Color.spurlySecondaryBackground; let cornerRadius: CGFloat = 12; let paddingHorizontal: CGFloat = 12; let paddingVertical: CGFloat = 10; let minHeight: CGFloat
     init(title: String, selection: Binding<SelectionValue>, options: [SelectionValue], textMapping: @escaping (SelectionValue) -> String) {
         self.title = title; self._selection = selection; self.options = options; self.textMapping = textMapping
         let fontLineHeight = Font.system(size: 16).capHeight * 1.2; self.minHeight = fontLineHeight + (paddingVertical * 2)
@@ -276,14 +286,14 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
 // MARK: - Onboarding Card View
 struct OnboardingCardView<Content: View>: View {
     let title: String; let content: Content
-    private let cardBackgroundColor = Color(hex:"#F9FAFB"); private let cardOpacity: Double = 0.85
-    private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.medium)
+    private let cardBackgroundColor = Color(hex:"#F9FAFB"); private let cardOpacity: Double = 0.87
+    private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
     init(title: String, @ViewBuilder content: () -> Content) { self.title = title; self.content = content() }
     var body: some View {
         VStack(alignment: .center, spacing: 20) {
             Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText).frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal).padding(.top, 30).padding(.bottom, 10)
-            content.padding(.horizontal); Spacer()
+            content.padding(.horizontal).opacity(1); Spacer()
         }
         .frame(maxWidth: .infinity).background(cardBackgroundColor).opacity(cardOpacity).cornerRadius(cardCornerRadius)
         .overlay(RoundedRectangle(cornerRadius: cardCornerRadius).stroke(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.8), Color.spurlyBordersSeparators.opacity(0.7)]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 4))
@@ -292,7 +302,7 @@ struct OnboardingCardView<Content: View>: View {
 
 // MARK: - Card Content Views
 struct BasicsCardContent: View {
-    @Binding var name: String; @Binding var age: Int?; @Binding var gender: String; @Binding var pronouns: String; @Binding var ethnicity: String
+    @Binding var name: String; @Binding var age: Int?; @Binding var gender: String; @Binding var pronouns: String; @Binding var ethnicity: String;
     let genderOptions = ["", "Male", "Female", "Non-binary", "Other"]; let pronounOptions = ["", "He/Him", "She/Her", "They/Them", "Other"]
     let ethnicityOptions = ["", "American Indian/Alaska Native", "Asian", "Black/African American", "Hispanic/Latino", "AANHPI", "White", "Middle Eastern/North African", "Multiracial", "Other"]
     let ageOptions: [Int?] = [nil] + Array(18..<100).map { Optional($0) }; let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
@@ -300,7 +310,7 @@ struct BasicsCardContent: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Name").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What should we call you", text: $name).textFieldStyle(CustomTextFieldStyle()).textContentType(.name); Spacer().frame(height: 8)
             HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("Age").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" }) }
+                VStack(alignment: .leading, spacing: 8) { Text("Age").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" }).opacity(1)}
                 VStack(alignment: .leading, spacing: 8) { Text("Gender").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Gender", selection: $gender, options: genderOptions, textMapping: { $0 }) }
             }; Spacer().frame(height: 8)
             HStack(alignment: .top, spacing: 16) {
@@ -338,7 +348,7 @@ struct LifestyleCardContent: View {
     let lookingForOptions = ["", "Casual", "Short term", "Long Term", "Marriage", "ENM", "Not sure"]; let kidsOptions = ["", "Want", "Don't want", "Have kids", "Have kids, want more", "Not sure"]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) { Text("Drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Drinking Habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
                 VStack(alignment: .leading, spacing: 8) { Text("Dating App").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Dating Platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
@@ -347,7 +357,7 @@ struct LifestyleCardContent: View {
                 VStack(alignment: .leading, spacing: 8) { Text("Looking For").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Looking For", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
                 VStack(alignment: .leading, spacing: 8) { Text("Kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
             }; Spacer().frame(height: 8)
-        }
+        }.padding(.top, 24).padding(.bottom, 20)
     }
 }
 
@@ -369,19 +379,20 @@ struct OnboardingView: View {
             GeometryReader { geometry in
                 ZStack {
                     Color.spurlyPrimaryBackground.ignoresSafeArea()
-                    Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.4, height: geometry.size.height * 1.4).opacity(0.5).position(x: geometry.size.width / 2, y: geometry.size.height * 0.575).allowsHitTesting(false)
+                    Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.2).opacity(0.35).position(x: geometry.size.width / 2, y: geometry.size.height * 0.553).allowsHitTesting(false)
+
                     VStack(spacing: 0) {
                         VStack { Image("SpurlyBannerBrandColor").resizable().scaledToFit().frame(height: 70).padding(.top, geometry.safeAreaInsets.top + 15); Spacer() }.frame(height: geometry.size.height * 0.1)
                         Text("help spurly help you in finding your words").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 50)
                         Spacer(minLength: 60)
-                        ProgressView(value: progress).progressViewStyle(LinearProgressViewStyle(tint: .spurlyPrimaryBrand)).frame(width: geometry.size.width * cardWidthMultiplier * 0.8).padding(.bottom, 20)
+                        ProgressView(value: progress).progressViewStyle(LinearProgressViewStyle(tint: .spurlyAccent)).frame(width: geometry.size.width * cardWidthMultiplier * 0.8).padding(.bottom, 20).shadow(color: .black.opacity(0.8), radius: 5, x: 2, y: 2)
                         Group {
                             switch currentCardIndex {
-                            case 0: OnboardingCardView(title: "Basics") { BasicsCardContent(name: $name, age: $age, gender: $gender, pronouns: $pronouns, ethnicity: $ethnicity) }
-                            case 1: OnboardingCardView(title: "Background") { BackgroundCardContent(currentCity: $currentCity, job: $job, school: $school, hometown: $hometown) }
-                            case 2: OnboardingCardView(title: "About Me") { AboutMeCardContent(greenlightTopics: $greenlightTopics, redlightTopics: $redlightTopics, allTopics: $allTopics) }
-                            case 3: OnboardingCardView(title: "Lifestyle") { LifestyleCardContent(drinking: $drinking, datingPlatform: $datingPlatform, lookingFor: $lookingFor, kids: $kids) }
-                            default: EmptyView()
+                                case 0: OnboardingCardView(title: "Basics") { BasicsCardContent(name: $name, age: $age, gender: $gender, pronouns: $pronouns, ethnicity: $ethnicity) }
+                                case 1: OnboardingCardView(title: "Background") { BackgroundCardContent(currentCity: $currentCity, job: $job, school: $school, hometown: $hometown) }
+                                case 2: OnboardingCardView(title: "About Me") { AboutMeCardContent(greenlightTopics: $greenlightTopics, redlightTopics: $redlightTopics, allTopics: $allTopics) }
+                                case 3: OnboardingCardView(title: "Lifestyle") { LifestyleCardContent(drinking: $drinking, datingPlatform: $datingPlatform, lookingFor: $lookingFor, kids: $kids) }
+                                default: EmptyView()
                             }
                         }.frame(width: geometry.size.width * cardWidthMultiplier, height: geometry.size.height * cardHeightMultiplier).padding(.bottom, 30)
                         HStack {

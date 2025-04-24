@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "teal_background_pattern.png",
+      "filename" : "SpurlyLogoBrandColor@1x.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "teal_background_pattern2.png",
+      "filename" : "SpurlyLogoBrandColor@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "teal_background_pattern3.png",
+      "filename" : "SpurlyLogoBrandColor@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
