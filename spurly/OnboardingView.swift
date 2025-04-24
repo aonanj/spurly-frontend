@@ -1,24 +1,24 @@
-//
-//  OnboardingView.swift
-//  spurly-frontend
-//  (COMPLETE FILE - Consolidated Version: Wednesday, April 23, 2025)
-//  Includes Lifestyle Card, Age Check on Card 1, Topic Conflict Resolution
-//
+
+
+
+
+
+
 
 import SwiftUI
 import UIKit
 
-// MARK: - Spurly Color Palette Definition
+
 extension Color {
-    static let spurlyPrimaryBrand = Color(hex: "#219EBC") // Blue Green
-    static let spurlyPrimaryBackground = Color(hex: "#FFF8F6") // Soft Blush White
-    static let spurlySecondaryBackground = Color(hex: "#FFEAE3") // Pastel Coral
-    static let spurlyPrimaryText = Color(hex: "#1D3557") // Deep Navy Blue
-    static let spurlySecondaryText = Color(hex: "#5A6777") // Slate Blue-Grey
-    static let spurlyAccent = Color(hex: "#FF9F1C") // Vibrant Tangerine Orange
-    static let spurlyBordersSeparators = Color(hex: "#F0C9C2") // Muted Coral Beige
-    static let spurlyPrimaryButton = Color(hex: "#1A7C94") // Darker Blue Green
-    static let spurlySecondaryButton = Color(hex: "#CED4DA") // Light Grey
+    static let spurlyPrimaryBrand = Color(hex: "#219EBC") 
+    static let spurlyPrimaryBackground = Color(hex: "#FFF8F6") 
+    static let spurlySecondaryBackground = Color(hex: "#FFEAE3") 
+    static let spurlyPrimaryText = Color(hex: "#1D3557") 
+    static let spurlySecondaryText = Color(hex: "#5A6777") 
+    static let spurlyAccent = Color(hex: "#FF9F1C") 
+    static let spurlyBordersSeparators = Color(hex: "#F0C9C2") 
+    static let spurlyPrimaryButton = Color(hex: "#1A7C94") 
+    static let spurlySecondaryButton = Color(hex: "#CED4DA") 
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -35,7 +35,7 @@ extension Color {
     }
 }
 
-// MARK: - Height PreferenceKey
+
 struct HeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -43,7 +43,21 @@ struct HeightPreferenceKey: PreferenceKey {
     }
 }
 
-// MARK: - FlowLayout Helper
+#if canImport(UIKit)
+import UIKit
+extension View { func hideKeyboard() { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
+extension Font {
+    var uiFont: UIFont {
+        let style: UIFont.TextStyle
+        switch self { case .largeTitle: style = .largeTitle; case .title: style = .title1; case .title2: style = .title2; case .title3: style = .title3; case .headline: style = .headline; case .subheadline: style = .subheadline; case .body: style = .body; case .callout: style = .callout; case .caption: style = .caption1; case .caption2: style = .caption2; case .footnote: style = .footnote; default: style = .body }
+        let size = UIFontDescriptor.preferredFontDescriptor(withTextStyle: style).pointSize; return UIFont.systemFont(ofSize: size)
+    }
+    var capHeight: CGFloat { uiFont.capHeight }
+}
+#else
+extension Font { var capHeight: CGFloat { return 16 * 0.7 } }
+#endif
+
 struct FlowLayout<Data: RandomAccessCollection, ID: Hashable, ItemView: View>: View {
     let data: Data
     let idKeyPath: KeyPath<Data.Element, ID>
@@ -106,7 +120,7 @@ struct FlowLayout<Data: RandomAccessCollection, ID: Hashable, ItemView: View>: V
     }
 }
 
-// MARK: - IntrinsicContentSize Helper
+
 extension View {
      var intrinsicContentSize: CGSize {
         let controller = UIHostingController(rootView: self.fixedSize(horizontal: true, vertical: true))
@@ -117,7 +131,7 @@ extension View {
     }
 }
 
-// MARK: - TopicFlowItem Enum
+
 enum TopicFlowItem: Identifiable, Hashable {
     case chip(String); case inputField
     var id: String { switch self { case .chip(let t): return "chip-\(t)"; case .inputField: return "inputField" } }
@@ -125,7 +139,7 @@ enum TopicFlowItem: Identifiable, Hashable {
     static func == (lhs: TopicFlowItem, rhs: TopicFlowItem) -> Bool { lhs.id == rhs.id }
 }
 
-// MARK: - ChipView Helper
+
 struct ChipView: View {
     let topic: String; let isGreen: Bool; let deleteAction: () -> Void
     var body: some View {
@@ -139,7 +153,7 @@ struct ChipView: View {
     }
 }
 
-// MARK: - OnboardingPayload Struct
+
 struct OnboardingPayload: Codable {
     var name: String?; var age: Int?; var gender: String?; var pronouns: String?; var school: String?
     var job: String?; var drinking: String?; var ethnicity: String?; var current_city: String?; var hometown: String?
@@ -155,10 +169,10 @@ struct OnboardingPayload: Codable {
     }
 }
 
-// MARK: - OnboardingResponse Struct
+
 struct OnboardingResponse: Codable { var user_id: String; var token: String }
 
-// MARK: - TopicInputField View
+
 struct TopicInputField: View {
     var label: String; @Binding var topics: [String]; var exclude: [String]; var allTopics: [String]; var isGreen: Bool
     @State private var newTopic = ""; @FocusState private var isTextFieldFocused: Bool; @State private var flowLayoutHeight: CGFloat = 30
@@ -198,9 +212,9 @@ struct TopicInputField: View {
             if isTextFieldFocused && !newTopic.isEmpty {
                 let filteredTopics = allTopics.filter { $0.lowercased().hasPrefix(newTopic.lowercased()) && !topics.contains($0) && !exclude.contains($0) }.prefix(2)
                 if !filteredTopics.isEmpty {
-                        // ForEach(Array(filteredTopics), id: \.self) { suggestion in
-                        //    Text(suggestion).font(inputFont).foregroundColor(.spurlyPrimaryText).padding(.vertical, 6)
-                        //        .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle()).onTapGesture { addTopic(suggestion) }
+                        
+                        
+                        
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(filteredTopics), id: \.self) { suggestion in
                             Button(action: { addTopic(suggestion) }) {
@@ -212,7 +226,7 @@ struct TopicInputField: View {
                                 Divider().background(Color.spurlyBordersSeparators).padding(.horizontal, 10)
                             }
                         }
-                    }//.background(Color.spurlySecondaryBackground)
+                    }
                         .cornerRadius(8).padding(.top, 4)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.spurlyBordersSeparators, lineWidth: 1))
                         .frame(maxHeight: min(CGFloat(filteredTopics.count), 2.0) * 44)
@@ -224,10 +238,10 @@ struct TopicInputField: View {
     }
 
     private func addTopic(_ topic: String) {
-        // Prevent adding if already in the other list (even if typed fully)
+        
         guard !exclude.contains(topic) else {
             print("Cannot add topic '\(topic)' to \(label) because it exists in the other list.")
-            // Optionally clear input and dismiss keyboard
+            
              newTopic = ""
              DispatchQueue.main.async { isTextFieldFocused = false }
             return
@@ -241,7 +255,7 @@ struct TopicInputField: View {
     private func addCurrentTopic() {
         let trimmedTopic = newTopic.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedTopic.isEmpty && !topics.contains(trimmedTopic) {
-            addTopic(trimmedTopic) // addTopic now contains the check against the exclude list
+            addTopic(trimmedTopic) 
         } else {
             newTopic = ""
             DispatchQueue.main.async { isTextFieldFocused = false }
@@ -249,14 +263,13 @@ struct TopicInputField: View {
     }
 }
 
-// MARK: - Custom Styles
+
 struct CustomTextFieldStyle: TextFieldStyle {
-    @FocusState private var isFocused: Bool
-    let inputFont = Font.custom("SF Pro Text", size: 16).weight(.bold)
+    let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular)
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration.font(inputFont).foregroundColor(.spurlyPrimaryText)
             .padding(.horizontal, 12).padding(.vertical, 10).background(Color.spurlySecondaryBackground).cornerRadius(12)
-            .opacity(1).focused($isFocused).onTapGesture { isFocused = false }
+            .opacity(1)
      }
 }
 struct CustomPickerStyle<SelectionValue: Hashable>: View {
@@ -283,7 +296,7 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
     private var currentSelectionText: String { isPlaceholder ? "" : textMapping(selection) }
 }
 
-// MARK: - Onboarding Card View
+
 struct OnboardingCardView<Content: View>: View {
     let title: String; let content: Content
     private let cardBackgroundColor = Color(hex:"#F9FAFB"); private let cardOpacity: Double = 0.87
@@ -300,23 +313,26 @@ struct OnboardingCardView<Content: View>: View {
     }
 }
 
-// MARK: - Card Content Views
+
 struct BasicsCardContent: View {
     @Binding var name: String; @Binding var age: Int?; @Binding var gender: String; @Binding var pronouns: String; @Binding var ethnicity: String;
+    @FocusState private var fieldIsFocused: Bool
     let genderOptions = ["", "Male", "Female", "Non-binary", "Other"]; let pronounOptions = ["", "He/Him", "She/Her", "They/Them", "Other"]
     let ethnicityOptions = ["", "American Indian/Alaska Native", "Asian", "Black/African American", "Hispanic/Latino", "AANHPI", "White", "Middle Eastern/North African", "Multiracial", "Other"]
     let ageOptions: [Int?] = [nil] + Array(18..<100).map { Optional($0) }; let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Name").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What should we call you", text: $name).textFieldStyle(CustomTextFieldStyle()).textContentType(.name); Spacer().frame(height: 8)
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("Age").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" }).opacity(1)}
-                VStack(alignment: .leading, spacing: 8) { Text("Gender").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Gender", selection: $gender, options: genderOptions, textMapping: { $0 }) }
-            }; Spacer().frame(height: 8)
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("Pronouns").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 }) }
-                VStack(alignment: .leading, spacing: 8) { Text("Ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 }) }
-            }; Spacer().frame(height: 8)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Name").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What should we call you", text: $name).textFieldStyle(CustomTextFieldStyle()).textContentType(.name).focused($fieldIsFocused).opacity(1).onSubmit{ fieldIsFocused = false }; Spacer().frame(height: 8)
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) { Text("Age").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" }).opacity(1)}
+                    VStack(alignment: .leading, spacing: 8) { Text("Gender").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Gender", selection: $gender, options: genderOptions, textMapping: { $0 }) }
+                }; Spacer().frame(height: 8)
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) { Text("Pronouns").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("Ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 }) }
+                }; Spacer().frame(height: 8)
+            }.contentShape(Rectangle()).onTapGesture{ fieldIsFocused = false }
         }
     }
 }
@@ -324,11 +340,13 @@ struct BackgroundCardContent: View {
     @Binding var currentCity: String; @Binding var job: String; @Binding var school: String; @Binding var hometown: String
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Current City").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
-            Text("Work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
-            Text("School").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("How to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
-            Text("Hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Current City").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
+                Text("Work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
+                Text("School").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("How to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
+                Text("Hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
+            }
         }
     }
 }
@@ -336,9 +354,11 @@ struct AboutMeCardContent: View {
     @Binding var greenlightTopics: [String]; @Binding var redlightTopics: [String]; @Binding var allTopics: [String]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            TopicInputField(label: "Green Light Topics", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
-            TopicInputField(label: "Red Light Topics", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                TopicInputField(label: "Green Light Topics", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
+                TopicInputField(label: "Red Light Topics", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
+            }
         }
     }
 }
@@ -348,29 +368,34 @@ struct LifestyleCardContent: View {
     let lookingForOptions = ["", "Casual", "Short term", "Long Term", "Marriage", "ENM", "Not sure"]; let kidsOptions = ["", "Want", "Don't want", "Have kids", "Have kids, want more", "Not sure"]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("Drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Drinking Habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
-                VStack(alignment: .leading, spacing: 8) { Text("Dating App").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Dating Platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
-            }; Spacer().frame(height: 8)
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("Looking For").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Looking For", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
-                VStack(alignment: .leading, spacing: 8) { Text("Kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
-            }; Spacer().frame(height: 8)
-        }.padding(.top, 24).padding(.bottom, 20)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) { Text("Drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Drinking Habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("Dating App").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Dating Platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
+                }; Spacer().frame(height: 8)
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) { Text("Looking For").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Looking For", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("Kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
+                }; Spacer().frame(height: 8)
+            }.padding(.top, 24).padding(.bottom, 20)
+        }
     }
 }
 
-// MARK: - Main Onboarding View
+
 struct OnboardingView: View {
     @State private var currentCardIndex = 0; let totalCards = 4
     @State private var name = ""; @State private var age: Int? = nil; @State private var gender = ""; @State private var pronouns = ""; @State private var ethnicity = ""
     @State private var currentCity = ""; @State private var hometown = ""; @State private var school = ""; @State private var job = ""
     @State private var drinking = ""; @State private var datingPlatform = ""; @State private var lookingFor = ""; @State private var kids = ""
     @State private var greenlightTopics: [String] = []; @State private var redlightTopics: [String] = []; @State private var allTopics: [String] = presetTopics
+    @FocusState private var isTextFieldFocused: Bool
     var progress: Double { guard totalCards > 0 else { return 0.0 }; return Double(currentCardIndex + 1) / Double(totalCards) }
     var isAgeValidForSubmission: Bool { guard let currentAge = age else { return false }; return currentAge >= 18 }
     let cardWidthMultiplier: CGFloat = 0.8; let cardHeightMultiplier: CGFloat = 0.55
+    let screenHeight = UIScreen.main.bounds.height
+    let screenWidth = UIScreen.main.bounds.width
 
 
 
@@ -379,8 +404,7 @@ struct OnboardingView: View {
             GeometryReader { geometry in
                 ZStack {
                     Color.spurlyPrimaryBackground.ignoresSafeArea()
-                    Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.2).opacity(0.35).position(x: geometry.size.width / 2, y: geometry.size.height * 0.553).allowsHitTesting(false)
-
+                    Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.2).opacity(0.35).position(x: screenWidth / 2, y: screenHeight * 0.553)
                     VStack(spacing: 0) {
                         VStack { Image("SpurlyBannerBrandColor").resizable().scaledToFit().frame(height: 70).padding(.top, geometry.safeAreaInsets.top + 15); Spacer() }.frame(height: geometry.size.height * 0.1)
                         Text("help spurly help you in finding your words").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 50)
@@ -403,9 +427,9 @@ struct OnboardingView: View {
                         }.padding(.top, 15).padding(.horizontal, geometry.size.width * (1.0 - cardWidthMultiplier) / 2.0).padding(.bottom, geometry.safeAreaInsets.bottom + 10)
                     }.padding(.bottom, geometry.safeAreaInsets.bottom + 5)
                 }
-                //.onChange(of: greenlightTopics, false) { _ in resolveTopicConflicts() }
-                //.onChange(of: redlightTopics, false) { _ in resolveTopicConflicts() }
-                .navigationBarHidden(true).ignoresSafeArea(.keyboard).contentShape(Rectangle()).onTapGesture { hideKeyboard() }
+                
+                
+                .navigationBarHidden(true).ignoresSafeArea(.keyboard, edges: .bottom).contentShape(Rectangle())
             }
         }
         .navigationViewStyle(.stack)
@@ -418,15 +442,15 @@ struct OnboardingView: View {
         let payload = OnboardingPayload( name: name, age: age, gender: gender, pronouns: pronouns, ethnicity: ethnicity, currentCity: currentCity, hometown: hometown, school: school, job: job, drinking: drinking, datingPlatform: datingPlatform, lookingFor: lookingFor, kids: kids, greenlightTopics: greenlightTopics, redlightTopics: redlightTopics )
         guard let encodedPayload = try? JSONEncoder().encode(payload) else { print("Error: Failed to encode payload."); return }
         print("Sending JSON payload:"); if let jsonString = String(data: encodedPayload, encoding: .utf8) { print(jsonString) } else { print("Could not convert encoded payload data to UTF8 string for printing.") }
-        guard let url = URL(string: "http://127.0.0.1:5000/onboarding") else { print("Error: Invalid URL"); return } // Replace with actual URL
+        guard let url = URL(string: "http://") else { print("Error: Invalid URL."); return }
         var request = URLRequest(url: url); request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = encodedPayload
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
-                if let error = error { print("Network Error: \(error.localizedDescription)"); return } // Handle error
-                guard let httpResponse = response as? HTTPURLResponse else { print("Error: Invalid HTTP response."); return } // Handle error
+                if let error = error { print("Network Error: \(error.localizedDescription)"); return } 
+                guard let httpResponse = response as? HTTPURLResponse else { print("Error: Invalid HTTP response."); return } 
                 print("Received HTTP Status: \(httpResponse.statusCode)")
-                guard (200...299).contains(httpResponse.statusCode) else { print("Error: Server returned status code \(httpResponse.statusCode)"); if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) { print("Server Error Response: \(errorString)") }; return } // Handle error
-                guard let responseData = data else { print("Error: No data received."); return } // Handle error
+                guard (200...299).contains(httpResponse.statusCode) else { print("Error: Server returned status code \(httpResponse.statusCode)"); if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) { print("Server Error Response: \(errorString)") }; return } 
+                guard let responseData = data else { print("Error: No data received."); return } 
                 do { let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData); print("Success! User ID: \(decodedResponse.user_id), Token: \(decodedResponse.token)") /* Handle success */ } catch { print("Error: Failed to decode response: \(error)") /* Handle error */ }
             }
         }.resume()
@@ -444,28 +468,11 @@ struct OnboardingView: View {
     }
 }
 
-// MARK: - Keyboard Helper & Font Helper
-#if canImport(UIKit)
-import UIKit
-extension View { func hideKeyboard() { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) } }
-extension Font {
-    var uiFont: UIFont {
-        let style: UIFont.TextStyle
-        switch self { case .largeTitle: style = .largeTitle; case .title: style = .title1; case .title2: style = .title2; case .title3: style = .title3; case .headline: style = .headline; case .subheadline: style = .subheadline; case .body: style = .body; case .callout: style = .callout; case .caption: style = .caption1; case .caption2: style = .caption2; case .footnote: style = .footnote; default: style = .body }
-        let size = UIFontDescriptor.preferredFontDescriptor(withTextStyle: style).pointSize; return UIFont.systemFont(ofSize: size)
-    }
-    var capHeight: CGFloat { uiFont.capHeight }
-}
-#else
-extension Font { var capHeight: CGFloat { return 16 * 0.7 } }
-#endif
 
-// MARK: - Preview Provider
 #if DEBUG
 struct OnboardingViewPreviewWrapper: View {
-    @State private var allTopicsPreview = ["Travel", "Foodie", "Hiking", "Movies", "Music", "Art", "Gaming", "Sports"]
+
     var body: some View { OnboardingView() }
 }
 struct OnboardingView_Previews: PreviewProvider { static var previews: some View { OnboardingView() } }
 #endif
-
