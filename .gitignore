@@ -1,0 +1,62 @@
+# === Xcode ===
+build/
+DerivedData/
+*.xcworkspace
+!default.xcworkspace
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcodeproj/project.xcworkspace/xcuserdata
+*.xcodeproj/xcuserdata
+.idea/
+*.xcscmblueprint
+
+# === Swift Package Manager ===
+.build/
+Packages/
+.swiftpm/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# === Cocoapods ===
+Pods/
+Podfile.lock
+
+# === Carthage ===
+Carthage/
+Carthage/Build/
+
+# === Fastlane ===
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# === Misc ===
+*.log
+*.DS_Store
+.env
+*.key
+*.pem
+*.p12
+*.mobileprovision
+
+# === Xcode Automatic Device Support ===
+DeviceSupport/
+
+# === Preview Content ===
+*.preview-thumbnails
+
+# === Playgrounds ===
+timeline.xctimeline
+playground.xcworkspace
+
+# === App Icons & Assets ===
+*.xcassets/**/Assets.car
+
+# === Simulator Logs ===
+coreSimulatorLogs/
+
+# === Firebase / GoogleService Files (manually exclude if private) ===
+# GoogleService-Info.plist
+

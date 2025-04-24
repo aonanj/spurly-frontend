@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C12FA1482DBA9FA1003CB184 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = C12FA1472DBA9F95003CB184 /* .gitignore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C1BAC3D42DBA21B000392D73 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C12FA1472DBA9F95003CB184 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		C1BAC3C62DBA21AF00392D73 /* spurly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = spurly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1BAC3D32DBA21B000392D73 /* spurlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = spurlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1BAC3DD2DBA21B000392D73 /* spurlyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = spurlyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +80,7 @@
 		C1BAC3BD2DBA21AE00392D73 = {
 			isa = PBXGroup;
 			children = (
+				C12FA1472DBA9F95003CB184 /* .gitignore */,
 				C1BAC3C82DBA21AF00392D73 /* spurly */,
 				C1BAC3D62DBA21B000392D73 /* spurlyTests */,
 				C1BAC3E02DBA21B000392D73 /* spurlyUITests */,
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C12FA1482DBA9FA1003CB184 /* .gitignore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
