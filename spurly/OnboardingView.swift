@@ -11,14 +11,18 @@ import UIKit
 
 extension Color {
     static let spurlyPrimaryBrand = Color(hex: "#219EBC")
-    static let spurlyPrimaryBackground = Color(hex: "#FFF8F6")
-    static let spurlySecondaryBackground = Color(hex: "#FFEAE3")
-    static let spurlyPrimaryText = Color(hex: "#1D3557")
-    static let spurlySecondaryText = Color(hex: "#5A6777")
-    static let spurlyAccent = Color(hex: "#FF9F1C")
-    static let spurlyBordersSeparators = Color(hex: "#F0C9C2")
-    static let spurlyPrimaryButton = Color(hex: "#1A7C94")
-    static let spurlySecondaryButton = Color(hex: "#CED4DA")
+    static let spurlyPrimaryBackground = Color(hex: "#F7FCFD") //Ice Blue
+    static let spurlySecondaryBackground = Color(hex: "#DFF5FA") //Light Blue
+    static let spurlyTertiaryBackground = Color(hex: "C5EDF5") //Lightest Blue
+    static let spurlyPrimaryText = Color(hex: "#1D3B4D") //Dark Blue
+    static let spurlySecondaryText = Color(hex: "#57758A") //Medium Blue
+    static let spurlyAccent = Color(hex: "#FFA500") //Orange
+    static let spurlyBordersSeparators = Color(hex: "#B0D5E5") //Lightest Blue
+    static let spurlyPrimaryButton = Color(hex: "#219EBC")
+    static let spurlySecondaryButton = Color(hex: "#A8D2E3")
+    static let spurlyCardBackground = Color(hex: "#F0FAFC")
+    static let spurlyAccentBorder = Color(hex: "#FFF5F1")
+    static let spurlySecondaryBorder = Color(hex: "#F0C9C2")
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -176,7 +180,7 @@ struct OnboardingResponse: Codable { var user_id: String; var token: String }
 struct TopicInputField: View {
     var label: String; @Binding var topics: [String]; var exclude: [String]; var allTopics: [String]; var isGreen: Bool
     @State private var newTopic = ""; @FocusState private var isTextFieldFocused: Bool; @State private var flowLayoutHeight: CGFloat = 30
-    let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular); let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular); let placeholderText = "Add topic..."
+    let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular); let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular); let placeholderText = "add topic..."
     private var flowItems: [TopicFlowItem] {
         let chipItems = topics.map { TopicFlowItem.chip($0) }
 
@@ -240,7 +244,7 @@ struct TopicInputField: View {
     private func addTopic(_ topic: String) {
 
         guard !exclude.contains(topic) else {
-            print("Cannot add topic '\(topic)' to \(label) because it exists in the other list.")
+            print("cannot add topic '\(topic)' to \(label) because it exists in the other list.")
 
              newTopic = ""
              DispatchQueue.main.async { isTextFieldFocused = false }
@@ -249,7 +253,7 @@ struct TopicInputField: View {
         if topics.count < 5 {
             topics.append(topic); newTopic = ""
             DispatchQueue.main.async { isTextFieldFocused = false }
-        } else { print("Topic limit reached for \(label). Cannot add '\(topic)'.") }
+        } else { print("topic limit reached for \(label). Cannot add '\(topic)'.") }
     }
 
     private func addCurrentTopic() {
@@ -269,14 +273,14 @@ struct CustomTextFieldStyle: TextFieldStyle {
     let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular)
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration.font(inputFont).foregroundColor(.spurlyPrimaryText)
-            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.spurlySecondaryBackground).cornerRadius(12)
+            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.spurlyAccentBorder).cornerRadius(12)
             .opacity(1)
      }
 }
 struct CustomPickerStyle<SelectionValue: Hashable>: View {
     let title: String; @Binding var selection: SelectionValue; let options: [SelectionValue]; let textMapping: (SelectionValue) -> String
     let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular); let placeholderColor = Color.spurlySecondaryText; let primaryColor = Color.spurlyPrimaryText
-    let backgroundColor = Color.spurlySecondaryBackground; let cornerRadius: CGFloat = 12; let paddingHorizontal: CGFloat = 12; let paddingVertical: CGFloat = 10; let minHeight: CGFloat
+    let backgroundColor = Color.spurlyAccentBorder; let cornerRadius: CGFloat = 12; let paddingHorizontal: CGFloat = 12; let paddingVertical: CGFloat = 10; let minHeight: CGFloat
     init(title: String, selection: Binding<SelectionValue>, options: [SelectionValue], textMapping: @escaping (SelectionValue) -> String) {
         self.title = title; self._selection = selection; self.options = options; self.textMapping = textMapping
         let fontLineHeight = Font.system(size: 16).capHeight * 1.2; self.minHeight = fontLineHeight + (paddingVertical * 2)
@@ -286,7 +290,7 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
         Menu { Picker(title, selection: $selection) { ForEach(options, id: \.self) { option in Text(textMapping(option)).tag(option) } } } label: {
             HStack {
                 Text(currentSelectionText).font(inputFont).foregroundColor(isPlaceholder ? placeholderColor : primaryColor)
-                    .accessibilityHint(isPlaceholder ? "Empty. Tap to select \(title)." : "Selected: \(currentSelectionText). Tap to change.")
+                    .accessibilityHint(isPlaceholder ? "empty. Tap to select \(title)." : "selected: \(currentSelectionText). Tap to change.")
                 Spacer(); Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundColor(.spurlySecondaryText)
             }
             .padding(.horizontal, paddingHorizontal).padding(.vertical, paddingVertical).frame(maxWidth: .infinity).frame(minHeight: minHeight)
@@ -299,43 +303,101 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
 
 
 struct OnboardingCardView<Content: View>: View {
-    let title: String; let content: Content
-    private let cardBackgroundColor = Color(hex:"#F9FAFB"); private let cardOpacity: Double = 0.87
+    let title: String; let icon: Image; let content: Content
+    private let cardBackgroundColor = Color.spurlyCardBackground; private let cardOpacity: Double = 0.92
     private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
-    init(title: String, @ViewBuilder content: () -> Content) { self.title = title; self.content = content() }
+    init(title: String, icon: Image, @ViewBuilder content: () -> Content) { self.title = title; self.icon = icon; self.content = content() }
     var body: some View {
         VStack(alignment: .center, spacing: 10) {
             Spacer()
-            Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText).frame(maxWidth: .infinity, alignment: .center).frame(minHeight: 5, idealHeight: 8, maxHeight: 10, alignment: .center)
-                .padding(.horizontal)
-            content.padding(.horizontal).opacity(1).padding(.vertical);
+            HStack(alignment: .center, spacing: 5) {
+                icon
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(.spurlyPrimaryText)
+                Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
+
+            }
+                content.padding(.horizontal).opacity(1).padding(.vertical);
             Spacer()
         }
         .frame(maxWidth: .infinity).background(cardBackgroundColor).opacity(cardOpacity).cornerRadius(cardCornerRadius)
-        .overlay(RoundedRectangle(cornerRadius: cardCornerRadius).stroke(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.8), Color.spurlyBordersSeparators.opacity(0.7)]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 4));
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius)
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(
+                            colors: [
+                                Color.white.opacity(0.8),
+                                Color.spurlySecondaryBorder.opacity(0.5)
+                            ]
+                        ),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 4
+                )
+        );
     }
 }
 
 
 struct BasicsCardContent: View {
-    @Binding var name: String; @Binding var age: Int?; @Binding var gender: String; @Binding var pronouns: String; @Binding var ethnicity: String;
+    @Binding var name: String
+    @Binding var age: Int?
+    @Binding var gender: String
+    @Binding var pronouns: String
+    @Binding var ethnicity: String
+    @Binding var showAgeError: Bool
     @FocusState private var fieldIsFocused: Bool
-    let genderOptions = ["", "Male", "Female", "Non-binary", "Other"]; let pronounOptions = ["", "He/Him", "She/Her", "They/Them", "Other"]
-    let ethnicityOptions = ["", "American Indian/Alaska Native", "Asian", "Black/African American", "Hispanic/Latino", "AANHPI", "White", "Middle Eastern/North African", "Multiracial", "Other"]
-    let ageOptions: [Int?] = [nil] + Array(18..<100).map { Optional($0) }; let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
+    let genderOptions = ["", "male", "female", "non-binary", "other"]
+    let pronounOptions = ["", "he/him", "she/her", "they/them", "other"]
+    let ethnicityOptions = ["", "american indian/alaska native", "asian", "black/african american", "hispanic/Latino", "aanhpi", "white", "middle eastern/north african", "multiracial", "other"]
+    let ageOptions: [Int?] = [nil] + Array(18..<100).map { Optional($0) }
+    let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Name").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What should we call you", text: $name).textFieldStyle(CustomTextFieldStyle()).textContentType(.name).focused($fieldIsFocused).onSubmit { fieldIsFocused = false }
+                Text("name").font(labelFont).foregroundColor(.spurlySecondaryText)
+                TextField("what should we call you", text: $name)
+                    .textFieldStyle(CustomTextFieldStyle())
+                    .textContentType(.name)
+                    .focused($fieldIsFocused)
+                    .onSubmit { fieldIsFocused = false }
                 Spacer().frame(height: 8)
                 HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) { Text("Age").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" }).opacity(1)}
-                    VStack(alignment: .leading, spacing: 8) { Text("Gender").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Gender", selection: $gender, options: genderOptions, textMapping: { $0 }) }
-                }; Spacer().frame(height: 8)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("age").font(labelFont).foregroundColor(.spurlySecondaryText)
+                        CustomPickerStyle(title: "age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" })
+                            .opacity(1)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.red, lineWidth: (showAgeError && !(age ?? 0 >= 18)) ? 2 : 0)
+                            )
+                        if showAgeError && !(age ?? 0 >= 18) {
+                            Text("you must be at least 18")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("gender").font(labelFont).foregroundColor(.spurlySecondaryText)
+                        CustomPickerStyle(title: "gender", selection: $gender, options: genderOptions, textMapping: { $0 })
+                    }
+                }
+                Spacer().frame(height: 8)
                 HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) { Text("Pronouns").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 }) }
-                    VStack(alignment: .leading, spacing: 8) { Text("Ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 }) }
-                }; Spacer().frame(height: 8)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("pronouns").font(labelFont).foregroundColor(.spurlySecondaryText)
+                        CustomPickerStyle(title: "pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 })
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText)
+                        CustomPickerStyle(title: "ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 })
+                    }
+                }
+                Spacer().frame(height: 8)
             }
         }
     }
@@ -347,13 +409,13 @@ struct BackgroundCardContent: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Current City").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
+                Text("current city").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
                     .focused($isCityFieldFocused).onSubmit { isCityFieldFocused = false }
-                Text("Work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
+                Text("work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("what do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
                     .focused($isWorkFieldFocused).onSubmit { isWorkFieldFocused = false }
-                Text("School").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("How to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
+                Text("school").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("how to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
                     .focused($isSchoolFieldFocused).onSubmit { isSchoolFieldFocused = false }
-                Text("Hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
+                Text("hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
                     .focused($isHometownFieldFocused).onSubmit { isHometownFieldFocused = false }
             }
         }
@@ -365,27 +427,27 @@ struct AboutMeCardContent: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                TopicInputField(label: "Likes", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
-                TopicInputField(label: "Dislikes", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
+                TopicInputField(label: "likes", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
+                TopicInputField(label: "dislikes", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
             }
         }
     }
 }
 struct LifestyleCardContent: View {
     @Binding var drinking: String; @Binding var datingPlatform: String; @Binding var lookingFor: String; @Binding var kids: String
-    let drinkingOptions = ["", "Often", "Socially", "Rarely", "Never"]; let datingPlatformOptions = ["", "Tinder", "Bumble", "Hinge", "Raya", "Plenty of Fish", "Match.com", "OkCupid", "Instagram", "Feeld", "Grindr", "Other"]
-    let lookingForOptions = ["", "Casual", "Short term", "Long Term", "Marriage", "ENM", "Not sure"]; let kidsOptions = ["", "Want", "Don't want", "Have kids", "Have kids, want more", "Not sure"]
+    let drinkingOptions = ["", "often", "socially", "rarely", "never"]; let datingPlatformOptions = ["", "tinder", "bumble", "hinge", "raya", "plenty of fish", "match.com", "okcupid", "instagram", "feeld", "grindr", "other"]
+    let lookingForOptions = ["", "casual", "short term", "long Term", "marriage", "enm", "not sure"]; let kidsOptions = ["", "want", "don't want", "have kids", "have kids, want more", "not sure"]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) { Text("Drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Drinking Habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
-                    VStack(alignment: .leading, spacing: 8) { Text("Dating App").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Dating Platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "drinking habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("dating app").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "dating platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
                 }; Spacer().frame(height: 8)
                 HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) { Text("Looking For").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Looking For", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
-                    VStack(alignment: .leading, spacing: 8) { Text("Kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("looking for").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "looking for", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
+                    VStack(alignment: .leading, spacing: 8) { Text("kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
                 }; Spacer().frame(height: 8)
             }.padding(.top, 24).padding(.bottom, 20)
         }
@@ -395,28 +457,40 @@ struct LifestyleCardContent: View {
 
 struct OnboardingView: View {
     @State private var currentCardIndex = 0; let totalCards = 4
-    @State private var name = ""; @State private var age: Int? = nil; @State private var gender = ""; @State private var pronouns = ""; @State private var ethnicity = ""
-    @State private var currentCity = ""; @State private var hometown = ""; @State private var school = ""; @State private var job = ""
-    @State private var drinking = ""; @State private var datingPlatform = ""; @State private var lookingFor = ""; @State private var kids = ""
-    @State private var greenlightTopics: [String] = []; @State private var redlightTopics: [String] = []; @State private var allTopics: [String] = presetTopics
+    @State private var name = ""
+    @State private var age: Int? = nil
+    @State private var gender = ""
+    @State private var pronouns = ""
+    @State private var ethnicity = ""
+    @State private var currentCity = ""
+    @State private var hometown = ""
+    @State private var school = ""
+    @State private var job = ""
+    @State private var drinking = ""
+    @State private var datingPlatform = ""
+    @State private var lookingFor = ""
+    @State private var kids = ""
+    @State private var greenlightTopics: [String] = []
+    @State private var redlightTopics: [String] = []
+    @State private var allTopics: [String] = presetTopics
+    @State private var showAgeError = false
     var progress: Double { guard totalCards > 0 else { return 0.0 }; return Double(currentCardIndex + 1) / Double(totalCards) }
     var isAgeValidForSubmission: Bool { guard let currentAge = age else { return false }; return currentAge >= 18 }
-    let cardWidthMultiplier: CGFloat = 0.8; let cardHeightMultiplier: CGFloat = 0.48
+    let cardWidthMultiplier: CGFloat = 0.8; let cardHeightMultiplier: CGFloat = 0.5
     let screenHeight = UIScreen.main.bounds.height
-    let screenWidth = UIScreen.main.bounds.width
-
+    let screenWidth = UIScreen.main.bounds.width//.resizable().scaledToFit().frame(width: 30, height: 30).foregroundColor(.spurlyPrimaryBrand)
 
 
     var body: some View {
         NavigationView {
             GeometryReader { geometry in
                 ZStack {
-                    Color.spurlyPrimaryBackground.ignoresSafeArea()
+                    Color.spurlyPrimaryBackground.ignoresSafeArea().onTapGesture { hideKeyboard() }
                     Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.2).opacity(0.35).position(x: screenWidth / 2, y: screenHeight * 0.553)
                     VStack(spacing: 0) {
                         VStack { Image("SpurlyBannerBrandColor").resizable().scaledToFit().frame(height: 70).padding(.top, geometry.safeAreaInsets.top + 15); Spacer() }.frame(height: geometry.size.height * 0.1)
                         Text("match their vibe. find your words.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 50)
-                        Text("now quicker with spurly.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal)
+                        Text("just quicker with spurly.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal)
                         Spacer(minLength: 80)
                         VStack(alignment: .center, spacing: 0) {
                             ProgressView(value: progress).progressViewStyle(LinearProgressViewStyle(tint: .spurlyAccent)).frame(width: geometry.size.width * cardWidthMultiplier * 0.8).padding(.bottom, 5).scaleEffect(x: 1, y: 1.2, anchor: .center).shadow(color: .black.opacity(0.8), radius: 5, x: 2, y: 2).frame(alignment: .center).padding(.horizontal)
@@ -424,22 +498,79 @@ struct OnboardingView: View {
                         }.padding(.bottom, 20)
                         Group {
                             switch currentCardIndex {
-                                case 0: OnboardingCardView(title: "Basics") { BasicsCardContent(name: $name, age: $age, gender: $gender, pronouns: $pronouns, ethnicity: $ethnicity) }
-                                case 1: OnboardingCardView(title: "Background") { BackgroundCardContent(currentCity: $currentCity, job: $job, school: $school, hometown: $hometown) }
-                                case 2: OnboardingCardView(title: "About Me") { AboutMeCardContent(greenlightTopics: $greenlightTopics, redlightTopics: $redlightTopics, allTopics: $allTopics) }
-                                case 3: OnboardingCardView(title: "Lifestyle") { LifestyleCardContent(drinking: $drinking, datingPlatform: $datingPlatform, lookingFor: $lookingFor, kids: $kids) }
+                                case 0:
+                                    OnboardingCardView(title: "basics", icon: Image(systemName: "person.crop.circle.fill")) {
+                                        BasicsCardContent(name: $name, age: $age, gender: $gender, pronouns: $pronouns, ethnicity: $ethnicity, showAgeError: $showAgeError)
+                                    }
+                                case 1:
+                                    OnboardingCardView(title: "background", icon: Image(systemName: "globe.americas.fill")) {
+                                        BackgroundCardContent(currentCity: $currentCity, job: $job, school: $school, hometown: $hometown)
+                                    }
+                                case 2:
+                                    OnboardingCardView(title: "about me", icon: Image(systemName: "person.text.rectangle.fill")) {
+                                        AboutMeCardContent(greenlightTopics: $greenlightTopics, redlightTopics: $redlightTopics, allTopics: $allTopics)
+                                    }
+                                case 3:
+                                    OnboardingCardView(title: "lifestyle", icon: Image(systemName: "heart.text.clipboard.fill")) {
+                                        LifestyleCardContent(drinking: $drinking, datingPlatform: $datingPlatform, lookingFor: $lookingFor, kids: $kids)
+                                    }
                                 default: EmptyView()
                             }
-                        }.frame(width: geometry.size.width * cardWidthMultiplier, height: geometry.size.height * cardHeightMultiplier).padding(.bottom, 30)
+                        }
+                        .frame(width: geometry.size.width * cardWidthMultiplier, height: geometry.size.height * cardHeightMultiplier)
+                        .padding(.bottom, 30)
                         HStack {
-                            if currentCardIndex > 0 { Button { withAnimation { currentCardIndex -= 1 } } label: { Image(systemName: "arrow.left").padding().background(Circle().fill(Color.spurlyPrimaryBrand.opacity(0.6))).foregroundColor(.spurlyPrimaryBackground) } } else { Button {} label: { Image(systemName: "arrow.left").padding().background(Circle().fill(Color.clear)) }.hidden() }
+                            if currentCardIndex > 0 {
+                                Button {
+                                    withAnimation { currentCardIndex -= 1 }
+                                } label: {
+                                    Image(systemName: "arrow.left")
+                                        .padding()
+                                        .background(Circle().fill(Color.spurlyPrimaryBrand.opacity(0.6)))
+                                        .foregroundColor(.spurlyPrimaryBackground)
+                                }
+                            } else {
+                                Button {} label: {
+                                    Image(systemName: "arrow.left")
+                                        .padding()
+                                        .background(Circle().fill(Color.clear))
+                                }.hidden()
+                            }
                             Spacer()
-                            let isNextButtonDisabled: Bool = { if currentCardIndex == 0 { return !(age ?? 0 >= 18) } else if currentCardIndex == totalCards - 1 { return !isAgeValidForSubmission } else { return false } }()
-                            Button { if currentCardIndex < totalCards - 1 { withAnimation { currentCardIndex += 1 } } else { submit() } } label: { Image(systemName: currentCardIndex < totalCards - 1 ? "arrow.right" : "checkmark").padding().background(Circle().fill(isNextButtonDisabled ? Color.spurlySecondaryText.opacity(0.3) : Color.spurlyPrimaryBrand.opacity(0.6))).foregroundColor(Color.spurlyPrimaryBackground) }.disabled(isNextButtonDisabled)
-                        }.padding(.top, 15).padding(.horizontal, geometry.size.width * (1.0 - cardWidthMultiplier) / 2.0).padding(.bottom, geometry.safeAreaInsets.bottom + 10)
+                            let isNextButtonDisabled: Bool = {
+                                if currentCardIndex == 0 {
+                                    return !(age ?? 0 >= 18)
+                                } else if currentCardIndex == totalCards - 1 {
+                                    return !isAgeValidForSubmission
+                                } else {
+                                    return false
+                                }
+                            }()
+                            Button {
+                                if isNextButtonDisabled {
+                                    // Show error if age is invalid
+                                    showAgeError = true
+                                } else {
+                                    // Clear error and proceed
+                                    showAgeError = false
+                                    if currentCardIndex < totalCards - 1 {
+                                        withAnimation { currentCardIndex += 1 }
+                                    } else {
+                                        submit()
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: currentCardIndex < totalCards - 1 ? "arrow.right" : "checkmark")
+                                    .padding()
+                                    .background(Circle().fill(isNextButtonDisabled ? Color.spurlySecondaryText.opacity(0.3) : Color.spurlyPrimaryBrand.opacity(0.6)))
+                                    .foregroundColor(Color.spurlyPrimaryBackground)
+                            }
+                        }
+                        .padding(.top, 15)
+                        .padding(.horizontal, geometry.size.width * (1.0 - cardWidthMultiplier) / 2.0)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
                     }.padding(.bottom, geometry.safeAreaInsets.bottom + 5).navigationBarHidden(true).ignoresSafeArea(.keyboard, edges: .bottom)
                 }
-                .onTapGesture { hideKeyboard() }
             }
         }
         .navigationViewStyle(.stack)
@@ -447,31 +578,31 @@ struct OnboardingView: View {
 
 
     private func sendOnboardingData() {
-        print("Attempting to submit onboarding data...")
-        guard isAgeValidForSubmission else { print("Error: Age is required and must be 18 or older for submission."); return }
+        print("attempting to submit onboarding data...")
+        guard isAgeValidForSubmission else { print("error: age is required and must be 18 or older for submission."); return }
         let payload = OnboardingPayload( name: name, age: age, gender: gender, pronouns: pronouns, ethnicity: ethnicity, currentCity: currentCity, hometown: hometown, school: school, job: job, drinking: drinking, datingPlatform: datingPlatform, lookingFor: lookingFor, kids: kids, greenlightTopics: greenlightTopics, redlightTopics: redlightTopics )
-        guard let encodedPayload = try? JSONEncoder().encode(payload) else { print("Error: Failed to encode payload."); return }
-        print("Sending JSON payload:"); if let jsonString = String(data: encodedPayload, encoding: .utf8) { print(jsonString) } else { print("Could not convert encoded payload data to UTF8 string for printing.") }
-        guard let url = URL(string: "http://") else { print("Error: Invalid URL."); return }
+        guard let encodedPayload = try? JSONEncoder().encode(payload) else { print("error: Failed to encode payload."); return }
+        print("Sending JSON payload:"); if let jsonString = String(data: encodedPayload, encoding: .utf8) { print(jsonString) } else { print("could not convert encoded payload data to UTF8 string for printing.") }
+        guard let url = URL(string: "http://") else { print("error: Invalid URL."); return }
         var request = URLRequest(url: url); request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = encodedPayload
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
-                if let error = error { print("Network Error: \(error.localizedDescription)"); return }
-                guard let httpResponse = response as? HTTPURLResponse else { print("Error: Invalid HTTP response."); return }
+                if let error = error { print("network Error: \(error.localizedDescription)"); return }
+                guard let httpResponse = response as? HTTPURLResponse else { print("error: Invalid HTTP response."); return }
                 print("Received HTTP Status: \(httpResponse.statusCode)")
-                guard (200...299).contains(httpResponse.statusCode) else { print("Error: Server returned status code \(httpResponse.statusCode)"); if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) { print("Server Error Response: \(errorString)") }; return }
-                guard let responseData = data else { print("Error: No data received."); return }
-                do { let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData); print("Success! User ID: \(decodedResponse.user_id), Token: \(decodedResponse.token)") /* Handle success */ } catch { print("Error: Failed to decode response: \(error)") /* Handle error */ }
+                guard (200...299).contains(httpResponse.statusCode) else { print("error: Server returned status code \(httpResponse.statusCode)"); if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) { print("Server Error Response: \(errorString)") }; return }
+                guard let responseData = data else { print("error: No data received."); return }
+                do { let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData); print("Success! User ID: \(decodedResponse.user_id), Token: \(decodedResponse.token)") /* Handle success */ } catch { print("error: Failed to decode response: \(error)") /* Handle error */ }
             }
         }.resume()
     }
-    private func submit() { hideKeyboard(); guard isAgeValidForSubmission else { print("Submit cancelled: Age validation failed."); return }; resolveTopicConflicts(); sendOnboardingData(); print("Submit action triggered!") }
+    private func submit() { hideKeyboard(); guard isAgeValidForSubmission else { print("Submit cancelled: age validation failed."); return }; resolveTopicConflicts(); sendOnboardingData(); print("Submit action triggered!") }
 
     private func resolveTopicConflicts() {
         let greenSet = Set(greenlightTopics); let redSet = Set(redlightTopics)
         let conflictingTopics = greenSet.intersection(redSet)
         if !conflictingTopics.isEmpty {
-            print("Conflict detected for topics: \(conflictingTopics). Removing from both lists.")
+            print("conflict detected for topics: \(conflictingTopics). Removing from both lists.")
             greenlightTopics.removeAll { conflictingTopics.contains($0) }
             redlightTopics.removeAll { conflictingTopics.contains($0) }
         }
