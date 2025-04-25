@@ -10,15 +10,15 @@ import UIKit
 
 
 extension Color {
-    static let spurlyPrimaryBrand = Color(hex: "#219EBC") 
-    static let spurlyPrimaryBackground = Color(hex: "#FFF8F6") 
-    static let spurlySecondaryBackground = Color(hex: "#FFEAE3") 
-    static let spurlyPrimaryText = Color(hex: "#1D3557") 
-    static let spurlySecondaryText = Color(hex: "#5A6777") 
-    static let spurlyAccent = Color(hex: "#FF9F1C") 
-    static let spurlyBordersSeparators = Color(hex: "#F0C9C2") 
-    static let spurlyPrimaryButton = Color(hex: "#1A7C94") 
-    static let spurlySecondaryButton = Color(hex: "#CED4DA") 
+    static let spurlyPrimaryBrand = Color(hex: "#219EBC")
+    static let spurlyPrimaryBackground = Color(hex: "#FFF8F6")
+    static let spurlySecondaryBackground = Color(hex: "#FFEAE3")
+    static let spurlyPrimaryText = Color(hex: "#1D3557")
+    static let spurlySecondaryText = Color(hex: "#5A6777")
+    static let spurlyAccent = Color(hex: "#FF9F1C")
+    static let spurlyBordersSeparators = Color(hex: "#F0C9C2")
+    static let spurlyPrimaryButton = Color(hex: "#1A7C94")
+    static let spurlySecondaryButton = Color(hex: "#CED4DA")
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -212,9 +212,9 @@ struct TopicInputField: View {
             if isTextFieldFocused && !newTopic.isEmpty {
                 let filteredTopics = allTopics.filter { $0.lowercased().hasPrefix(newTopic.lowercased()) && !topics.contains($0) && !exclude.contains($0) }.prefix(2)
                 if !filteredTopics.isEmpty {
-                        
-                        
-                        
+
+
+
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(filteredTopics), id: \.self) { suggestion in
                             Button(action: { addTopic(suggestion) }) {
@@ -238,10 +238,10 @@ struct TopicInputField: View {
     }
 
     private func addTopic(_ topic: String) {
-        
+
         guard !exclude.contains(topic) else {
             print("Cannot add topic '\(topic)' to \(label) because it exists in the other list.")
-            
+
              newTopic = ""
              DispatchQueue.main.async { isTextFieldFocused = false }
             return
@@ -255,7 +255,7 @@ struct TopicInputField: View {
     private func addCurrentTopic() {
         let trimmedTopic = newTopic.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedTopic.isEmpty && !topics.contains(trimmedTopic) {
-            addTopic(trimmedTopic) 
+            addTopic(trimmedTopic)
         } else {
             newTopic = ""
             DispatchQueue.main.async { isTextFieldFocused = false }
@@ -265,6 +265,7 @@ struct TopicInputField: View {
 
 
 struct CustomTextFieldStyle: TextFieldStyle {
+
     let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular)
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration.font(inputFont).foregroundColor(.spurlyPrimaryText)
@@ -289,7 +290,7 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
                 Spacer(); Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundColor(.spurlySecondaryText)
             }
             .padding(.horizontal, paddingHorizontal).padding(.vertical, paddingVertical).frame(maxWidth: .infinity).frame(minHeight: minHeight)
-            .background(backgroundColor).cornerRadius(cornerRadius).contentShape(Rectangle())
+            .background(backgroundColor).cornerRadius(cornerRadius)
         }
     }
     private var isPlaceholder: Bool { if let o = selection as? Optional<Any>, o == nil { return true }; if let s = selection as? String, s.isEmpty { return true }; return false }
@@ -303,13 +304,15 @@ struct OnboardingCardView<Content: View>: View {
     private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
     init(title: String, @ViewBuilder content: () -> Content) { self.title = title; self.content = content() }
     var body: some View {
-        VStack(alignment: .center, spacing: 20) {
-            Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText).frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal).padding(.top, 30).padding(.bottom, 10)
-            content.padding(.horizontal).opacity(1); Spacer()
+        VStack(alignment: .center, spacing: 10) {
+            Spacer()
+            Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText).frame(maxWidth: .infinity, alignment: .center).frame(minHeight: 5, idealHeight: 8, maxHeight: 10, alignment: .center)
+                .padding(.horizontal)
+            content.padding(.horizontal).opacity(1).padding(.vertical);
+            Spacer()
         }
         .frame(maxWidth: .infinity).background(cardBackgroundColor).opacity(cardOpacity).cornerRadius(cardCornerRadius)
-        .overlay(RoundedRectangle(cornerRadius: cardCornerRadius).stroke(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.8), Color.spurlyBordersSeparators.opacity(0.7)]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 4))
+        .overlay(RoundedRectangle(cornerRadius: cardCornerRadius).stroke(LinearGradient(gradient: Gradient(colors: [Color.white.opacity(0.8), Color.spurlyBordersSeparators.opacity(0.7)]), startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 4));
     }
 }
 
@@ -323,7 +326,8 @@ struct BasicsCardContent: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Name").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What should we call you", text: $name).textFieldStyle(CustomTextFieldStyle()).textContentType(.name).focused($fieldIsFocused).opacity(1).onSubmit{ fieldIsFocused = false }; Spacer().frame(height: 8)
+                Text("Name").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What should we call you", text: $name).textFieldStyle(CustomTextFieldStyle()).textContentType(.name).focused($fieldIsFocused).onSubmit { fieldIsFocused = false }
+                Spacer().frame(height: 8)
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) { Text("Age").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" }).opacity(1)}
                     VStack(alignment: .leading, spacing: 8) { Text("Gender").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Gender", selection: $gender, options: genderOptions, textMapping: { $0 }) }
@@ -332,20 +336,25 @@ struct BasicsCardContent: View {
                     VStack(alignment: .leading, spacing: 8) { Text("Pronouns").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 }) }
                     VStack(alignment: .leading, spacing: 8) { Text("Ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "Ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 }) }
                 }; Spacer().frame(height: 8)
-            }.contentShape(Rectangle()).onTapGesture{ fieldIsFocused = false }
+            }
         }
     }
 }
 struct BackgroundCardContent: View {
+    @FocusState private var isCityFieldFocused: Bool; @FocusState private var isWorkFieldFocused: Bool; @FocusState private var isSchoolFieldFocused: Bool; @FocusState private var isHometownFieldFocused: Bool
     @Binding var currentCity: String; @Binding var job: String; @Binding var school: String; @Binding var hometown: String
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Current City").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
+                    .focused($isCityFieldFocused).onSubmit { isCityFieldFocused = false }
                 Text("Work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("What do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
+                    .focused($isWorkFieldFocused).onSubmit { isWorkFieldFocused = false }
                 Text("School").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("How to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
+                    .focused($isSchoolFieldFocused).onSubmit { isSchoolFieldFocused = false }
                 Text("Hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("Where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
+                    .focused($isHometownFieldFocused).onSubmit { isHometownFieldFocused = false }
             }
         }
     }
@@ -356,8 +365,8 @@ struct AboutMeCardContent: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                TopicInputField(label: "Green Light Topics", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
-                TopicInputField(label: "Red Light Topics", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
+                TopicInputField(label: "Likes", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
+                TopicInputField(label: "Dislikes", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
             }
         }
     }
@@ -390,10 +399,9 @@ struct OnboardingView: View {
     @State private var currentCity = ""; @State private var hometown = ""; @State private var school = ""; @State private var job = ""
     @State private var drinking = ""; @State private var datingPlatform = ""; @State private var lookingFor = ""; @State private var kids = ""
     @State private var greenlightTopics: [String] = []; @State private var redlightTopics: [String] = []; @State private var allTopics: [String] = presetTopics
-    @FocusState private var isTextFieldFocused: Bool
     var progress: Double { guard totalCards > 0 else { return 0.0 }; return Double(currentCardIndex + 1) / Double(totalCards) }
     var isAgeValidForSubmission: Bool { guard let currentAge = age else { return false }; return currentAge >= 18 }
-    let cardWidthMultiplier: CGFloat = 0.8; let cardHeightMultiplier: CGFloat = 0.55
+    let cardWidthMultiplier: CGFloat = 0.8; let cardHeightMultiplier: CGFloat = 0.48
     let screenHeight = UIScreen.main.bounds.height
     let screenWidth = UIScreen.main.bounds.width
 
@@ -407,9 +415,13 @@ struct OnboardingView: View {
                     Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.2).opacity(0.35).position(x: screenWidth / 2, y: screenHeight * 0.553)
                     VStack(spacing: 0) {
                         VStack { Image("SpurlyBannerBrandColor").resizable().scaledToFit().frame(height: 70).padding(.top, geometry.safeAreaInsets.top + 15); Spacer() }.frame(height: geometry.size.height * 0.1)
-                        Text("help spurly help you in finding your words").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 50)
-                        Spacer(minLength: 60)
-                        ProgressView(value: progress).progressViewStyle(LinearProgressViewStyle(tint: .spurlyAccent)).frame(width: geometry.size.width * cardWidthMultiplier * 0.8).padding(.bottom, 20).shadow(color: .black.opacity(0.8), radius: 5, x: 2, y: 2)
+                        Text("match their vibe. find your words.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 50)
+                        Text("now quicker with spurly.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal)
+                        Spacer(minLength: 80)
+                        VStack(alignment: .center, spacing: 0) {
+                            ProgressView(value: progress).progressViewStyle(LinearProgressViewStyle(tint: .spurlyAccent)).frame(width: geometry.size.width * cardWidthMultiplier * 0.8).padding(.bottom, 5).scaleEffect(x: 1, y: 1.2, anchor: .center).shadow(color: .black.opacity(0.8), radius: 5, x: 2, y: 2).frame(alignment: .center).padding(.horizontal)
+                            Text("(\(currentCardIndex + 1)/4) ").font(Font.custom("SF Pro Text", size: 12).weight(.regular)).foregroundColor(.spurlySecondaryText).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal)
+                        }.padding(.bottom, 20)
                         Group {
                             switch currentCardIndex {
                                 case 0: OnboardingCardView(title: "Basics") { BasicsCardContent(name: $name, age: $age, gender: $gender, pronouns: $pronouns, ethnicity: $ethnicity) }
@@ -425,11 +437,9 @@ struct OnboardingView: View {
                             let isNextButtonDisabled: Bool = { if currentCardIndex == 0 { return !(age ?? 0 >= 18) } else if currentCardIndex == totalCards - 1 { return !isAgeValidForSubmission } else { return false } }()
                             Button { if currentCardIndex < totalCards - 1 { withAnimation { currentCardIndex += 1 } } else { submit() } } label: { Image(systemName: currentCardIndex < totalCards - 1 ? "arrow.right" : "checkmark").padding().background(Circle().fill(isNextButtonDisabled ? Color.spurlySecondaryText.opacity(0.3) : Color.spurlyPrimaryBrand.opacity(0.6))).foregroundColor(Color.spurlyPrimaryBackground) }.disabled(isNextButtonDisabled)
                         }.padding(.top, 15).padding(.horizontal, geometry.size.width * (1.0 - cardWidthMultiplier) / 2.0).padding(.bottom, geometry.safeAreaInsets.bottom + 10)
-                    }.padding(.bottom, geometry.safeAreaInsets.bottom + 5)
+                    }.padding(.bottom, geometry.safeAreaInsets.bottom + 5).navigationBarHidden(true).ignoresSafeArea(.keyboard, edges: .bottom)
                 }
-                
-                
-                .navigationBarHidden(true).ignoresSafeArea(.keyboard, edges: .bottom).contentShape(Rectangle())
+                .onTapGesture { hideKeyboard() }
             }
         }
         .navigationViewStyle(.stack)
@@ -446,11 +456,11 @@ struct OnboardingView: View {
         var request = URLRequest(url: url); request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = encodedPayload
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
-                if let error = error { print("Network Error: \(error.localizedDescription)"); return } 
-                guard let httpResponse = response as? HTTPURLResponse else { print("Error: Invalid HTTP response."); return } 
+                if let error = error { print("Network Error: \(error.localizedDescription)"); return }
+                guard let httpResponse = response as? HTTPURLResponse else { print("Error: Invalid HTTP response."); return }
                 print("Received HTTP Status: \(httpResponse.statusCode)")
-                guard (200...299).contains(httpResponse.statusCode) else { print("Error: Server returned status code \(httpResponse.statusCode)"); if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) { print("Server Error Response: \(errorString)") }; return } 
-                guard let responseData = data else { print("Error: No data received."); return } 
+                guard (200...299).contains(httpResponse.statusCode) else { print("Error: Server returned status code \(httpResponse.statusCode)"); if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) { print("Server Error Response: \(errorString)") }; return }
+                guard let responseData = data else { print("Error: No data received."); return }
                 do { let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData); print("Success! User ID: \(decodedResponse.user_id), Token: \(decodedResponse.token)") /* Handle success */ } catch { print("Error: Failed to decode response: \(error)") /* Handle error */ }
             }
         }.resume()
@@ -476,3 +486,4 @@ struct OnboardingViewPreviewWrapper: View {
 }
 struct OnboardingView_Previews: PreviewProvider { static var previews: some View { OnboardingView() } }
 #endif
+
