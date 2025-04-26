@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "SpurlyLogoBrandColor@1x.png",
+      "filename" : "SpurlyLogoSlate.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "SpurlyLogoBrandColor@2x.png",
+      "filename" : "SpurlyLogoSlate@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "SpurlyLogoBrandColor@3x.png",
+      "filename" : "SpurlyLogoSlate@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
