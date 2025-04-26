@@ -9,37 +9,6 @@ import SwiftUI
 import UIKit
 
 
-extension Color {
-    static let spurlyPrimaryBrand = Color(hex: "#219EBC")
-    static let spurlyPrimaryBackground = Color(hex: "#F7FCFD") //Ice Blue
-    static let spurlySecondaryBackground = Color(hex: "#DFF5FA") //Light Blue
-    static let spurlyTertiaryBackground = Color(hex: "C5EDF5") //Lightest Blue
-    static let spurlyPrimaryText = Color(hex: "#1D3B4D") //Dark Blue
-    static let spurlySecondaryText = Color(hex: "#57758A") //Medium Blue
-    static let spurlyAccent = Color(hex: "#FFA500") //Orange
-    static let spurlyBordersSeparators = Color(hex: "#B0D5E5") //Lightest Blue
-    static let spurlyPrimaryButton = Color(hex: "#219EBC")
-    static let spurlySecondaryButton = Color(hex: "#A8D2E3")
-    static let spurlyCardBackground = Color(hex: "#F0FAFC")
-    static let spurlyAccentBorder = Color(hex: "#FFF5F1")
-    static let spurlySecondaryBorder = Color(hex: "#F0C9C2")
-
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:(a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
-    }
-}
-
-
 struct HeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -146,14 +115,23 @@ enum TopicFlowItem: Identifiable, Hashable {
 
 struct ChipView: View {
     let topic: String; let isGreen: Bool; let deleteAction: () -> Void
+    let topicChipGreen = Color(hex: "#D0FFBC")
+    let topicChipRed = Color(hex: "#FF8488")
     var body: some View {
         HStack(spacing: 4) {
             Text(topic).lineLimit(1).font(.system(size: 14)).foregroundColor(Color.spurlyPrimaryText.opacity(0.9))
             Button(action: deleteAction) { Image(systemName: "xmark.circle.fill").foregroundColor(Color.spurlySecondaryText) }
         }
-        .padding(.horizontal, 10).padding(.vertical, 5)
-        .background((isGreen ? Color.green.opacity(0.2) : Color.red.opacity(0.2)))
-        .cornerRadius(16).fixedSize()
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .fixedSize()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(isGreen
+                      ? topicChipGreen.opacity(0.7)
+                      : topicChipRed.opacity(0.7))
+                .shadow(color: .black.opacity(0.5), radius: 4, x: 4, y: 4)
+        )
     }
 }
 
@@ -201,8 +179,9 @@ struct TopicInputField: View {
                 case .inputField:
                     TextField(placeholderText, text: $newTopic)
                         .font(inputFont).foregroundColor(.spurlyPrimaryText).textFieldStyle(.plain)
-                        .padding(.horizontal, 10).padding(.vertical, 5).background(Color.spurlySecondaryBackground)
+                        .padding(.horizontal, 10).padding(.vertical, 5).background(Color.spurlyTertiaryBackground)
                         .cornerRadius(16).frame(minWidth: 120, idealHeight: 30).fixedSize()
+                        .shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4)
                         .focused($isTextFieldFocused).onSubmit { addCurrentTopic() }
                 }
             }
@@ -273,14 +252,16 @@ struct CustomTextFieldStyle: TextFieldStyle {
     let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular)
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration.font(inputFont).foregroundColor(.spurlyPrimaryText)
-            .padding(.horizontal, 12).padding(.vertical, 10).background(Color.spurlyAccentBorder).cornerRadius(12)
-            .opacity(1)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color.spurlyTertiaryBackground)
+            .cornerRadius(12).shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4)
      }
 }
 struct CustomPickerStyle<SelectionValue: Hashable>: View {
     let title: String; @Binding var selection: SelectionValue; let options: [SelectionValue]; let textMapping: (SelectionValue) -> String
     let inputFont = Font.custom("SF Pro Text", size: 16).weight(.regular); let placeholderColor = Color.spurlySecondaryText; let primaryColor = Color.spurlyPrimaryText
-    let backgroundColor = Color.spurlyAccentBorder; let cornerRadius: CGFloat = 12; let paddingHorizontal: CGFloat = 12; let paddingVertical: CGFloat = 10; let minHeight: CGFloat
+    let backgroundColor = Color.spurlyTertiaryBackground; let cornerRadius: CGFloat = 12; let paddingHorizontal: CGFloat = 12; let paddingVertical: CGFloat = 10; let minHeight: CGFloat
     init(title: String, selection: Binding<SelectionValue>, options: [SelectionValue], textMapping: @escaping (SelectionValue) -> String) {
         self.title = title; self._selection = selection; self.options = options; self.textMapping = textMapping
         let fontLineHeight = Font.system(size: 16).capHeight * 1.2; self.minHeight = fontLineHeight + (paddingVertical * 2)
@@ -290,11 +271,11 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
         Menu { Picker(title, selection: $selection) { ForEach(options, id: \.self) { option in Text(textMapping(option)).tag(option) } } } label: {
             HStack {
                 Text(currentSelectionText).font(inputFont).foregroundColor(isPlaceholder ? placeholderColor : primaryColor)
-                    .accessibilityHint(isPlaceholder ? "empty. Tap to select \(title)." : "selected: \(currentSelectionText). Tap to change.")
+                    .accessibilityHint(isPlaceholder ? "empty. tap to select \(title)." : "selected: \(currentSelectionText). tap to change.")
                 Spacer(); Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundColor(.spurlySecondaryText)
             }
             .padding(.horizontal, paddingHorizontal).padding(.vertical, paddingVertical).frame(maxWidth: .infinity).frame(minHeight: minHeight)
-            .background(backgroundColor).cornerRadius(cornerRadius)
+            .background(backgroundColor).cornerRadius(cornerRadius).shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4)
         }
     }
     private var isPlaceholder: Bool { if let o = selection as? Optional<Any>, o == nil { return true }; if let s = selection as? String, s.isEmpty { return true }; return false }
@@ -308,37 +289,41 @@ struct OnboardingCardView<Content: View>: View {
     private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
     init(title: String, icon: Image, @ViewBuilder content: () -> Content) { self.title = title; self.icon = icon; self.content = content() }
     var body: some View {
-        VStack(alignment: .center, spacing: 10) {
-            Spacer()
-            HStack(alignment: .center, spacing: 5) {
-                icon
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(.spurlyPrimaryText)
-                Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
+        ScrollView {
+            VStack(alignment: .center, spacing: 10) {
+                Spacer()
+                HStack(alignment: .center, spacing: 5) {
+                    icon
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(.spurlyPrimaryText)
+                    Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
 
-            }
+                }
                 content.padding(.horizontal).opacity(1).padding(.vertical);
-            Spacer()
-        }
-        .frame(maxWidth: .infinity).background(cardBackgroundColor).opacity(cardOpacity).cornerRadius(cardCornerRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius)
-                .stroke(
-                    LinearGradient(
-                        gradient: Gradient(
-                            colors: [
-                                Color.white.opacity(0.8),
-                                Color.spurlySecondaryBorder.opacity(0.5)
-                            ]
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .background(cardBackgroundColor)
+            .opacity(cardOpacity).cornerRadius(cardCornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: cardCornerRadius)
+                    .stroke(
+                        LinearGradient(
+                            gradient: Gradient(
+                                colors: [
+                                    Color.white.opacity(0.8),
+                                    Color.spurlyHighlight.opacity(0.5)
+                                ]
+                            ),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         ),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 4
-                )
-        );
+                        lineWidth: 6
+                    )
+            );
+        }
     }
 }
 
@@ -357,48 +342,46 @@ struct BasicsCardContent: View {
     let ageOptions: [Int?] = [nil] + Array(18..<100).map { Optional($0) }
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("name").font(labelFont).foregroundColor(.spurlySecondaryText)
-                TextField("what should we call you", text: $name)
-                    .textFieldStyle(CustomTextFieldStyle())
-                    .textContentType(.name)
-                    .focused($fieldIsFocused)
-                    .onSubmit { fieldIsFocused = false }
-                Spacer().frame(height: 8)
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("age").font(labelFont).foregroundColor(.spurlySecondaryText)
-                        CustomPickerStyle(title: "age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" })
-                            .opacity(1)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.red, lineWidth: (showAgeError && !(age ?? 0 >= 18)) ? 2 : 0)
-                            )
-                        if showAgeError && !(age ?? 0 >= 18) {
-                            Text("you must be at least 18")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        }
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("gender").font(labelFont).foregroundColor(.spurlySecondaryText)
-                        CustomPickerStyle(title: "gender", selection: $gender, options: genderOptions, textMapping: { $0 })
+        VStack(alignment: .leading, spacing: 8) {
+            Text("name").font(labelFont).foregroundColor(.spurlySecondaryText)
+            TextField("what should we call you", text: $name)
+                .textFieldStyle(CustomTextFieldStyle())
+                .textContentType(.name)
+                .focused($fieldIsFocused)
+                .onSubmit { fieldIsFocused = false }
+            Spacer().frame(height: 8)
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("age").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" })
+                        .opacity(1)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.red, lineWidth: (showAgeError && !(age ?? 0 >= 18)) ? 2 : 0)
+                        )
+                    if showAgeError && !(age ?? 0 >= 18) {
+                        Text("you must be at least 18")
+                            .font(.caption)
+                            .foregroundColor(.red)
                     }
                 }
-                Spacer().frame(height: 8)
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("pronouns").font(labelFont).foregroundColor(.spurlySecondaryText)
-                        CustomPickerStyle(title: "pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 })
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText)
-                        CustomPickerStyle(title: "ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 })
-                    }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("gender").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "gender", selection: $gender, options: genderOptions, textMapping: { $0 })
                 }
-                Spacer().frame(height: 8)
             }
+            Spacer().frame(height: 8)
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("pronouns").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 })
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 })
+                }
+            }
+            Spacer().frame(height: 8)
         }
     }
 }
@@ -407,17 +390,15 @@ struct BackgroundCardContent: View {
     @Binding var currentCity: String; @Binding var job: String; @Binding var school: String; @Binding var hometown: String
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("current city").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
-                    .focused($isCityFieldFocused).onSubmit { isCityFieldFocused = false }
-                Text("work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("what do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
-                    .focused($isWorkFieldFocused).onSubmit { isWorkFieldFocused = false }
-                Text("school").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("how to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
-                    .focused($isSchoolFieldFocused).onSubmit { isSchoolFieldFocused = false }
-                Text("hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
-                    .focused($isHometownFieldFocused).onSubmit { isHometownFieldFocused = false }
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text("current city").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("where at", text: $currentCity).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity); Spacer().frame(height: 4)
+                .focused($isCityFieldFocused).onSubmit { isCityFieldFocused = false }
+            Text("work").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("what do", text: $job).textFieldStyle(CustomTextFieldStyle()).textContentType(.jobTitle); Spacer().frame(height: 4)
+                .focused($isWorkFieldFocused).onSubmit { isWorkFieldFocused = false }
+            Text("school").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("how to", text: $school).textFieldStyle(CustomTextFieldStyle()).textContentType(.organizationName); Spacer().frame(height: 4)
+                .focused($isSchoolFieldFocused).onSubmit { isSchoolFieldFocused = false }
+            Text("hometown").font(labelFont).foregroundColor(.spurlySecondaryText); TextField("where from", text: $hometown).textFieldStyle(CustomTextFieldStyle()).textContentType(.addressCity)
+                .focused($isHometownFieldFocused).onSubmit { isHometownFieldFocused = false }
         }
     }
 }
@@ -425,32 +406,28 @@ struct AboutMeCardContent: View {
     @Binding var greenlightTopics: [String]; @Binding var redlightTopics: [String]; @Binding var allTopics: [String]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                TopicInputField(label: "likes", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
-                TopicInputField(label: "dislikes", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            TopicInputField(label: "likes", topics: $greenlightTopics, exclude: redlightTopics, allTopics: allTopics, isGreen: true)
+            TopicInputField(label: "dislikes", topics: $redlightTopics, exclude: greenlightTopics, allTopics: allTopics, isGreen: false)
         }
     }
 }
 struct LifestyleCardContent: View {
     @Binding var drinking: String; @Binding var datingPlatform: String; @Binding var lookingFor: String; @Binding var kids: String
     let drinkingOptions = ["", "often", "socially", "rarely", "never"]; let datingPlatformOptions = ["", "tinder", "bumble", "hinge", "raya", "plenty of fish", "match.com", "okcupid", "instagram", "feeld", "grindr", "other"]
-    let lookingForOptions = ["", "casual", "short term", "long Term", "marriage", "enm", "not sure"]; let kidsOptions = ["", "want", "don't want", "have kids", "have kids, want more", "not sure"]
+    let lookingForOptions = ["", "casual", "short term", "long term", "marriage", "enm", "not sure"]; let kidsOptions = ["", "want", "don't want", "have kids", "have kids, want more", "not sure"]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) { Text("drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "drinking habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
-                    VStack(alignment: .leading, spacing: 8) { Text("dating app").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "dating platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
-                }; Spacer().frame(height: 8)
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) { Text("looking for").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "looking for", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
-                    VStack(alignment: .leading, spacing: 8) { Text("kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
-                }; Spacer().frame(height: 8)
-            }.padding(.top, 24).padding(.bottom, 20)
-        }
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) { Text("drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "drinking habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }) }
+                VStack(alignment: .leading, spacing: 8) { Text("dating app").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "dating platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }) }
+            }; Spacer().frame(height: 8)
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) { Text("looking for").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "looking for", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }) }
+                VStack(alignment: .leading, spacing: 8) { Text("kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "kids", selection: $kids, options: kidsOptions, textMapping: { $0 }) }
+            }; Spacer().frame(height: 8)
+        }.padding(.top, 24).padding(.bottom, 20)
     }
 }
 
@@ -486,16 +463,53 @@ struct OnboardingView: View {
             GeometryReader { geometry in
                 ZStack {
                     Color.spurlyPrimaryBackground.ignoresSafeArea().onTapGesture { hideKeyboard() }
-                    Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.1, height: geometry.size.height * 1.2).opacity(0.35).position(x: screenWidth / 2, y: screenHeight * 0.553)
+                    Image("SpurlyBackgroundBrandColor").resizable().scaledToFit().frame(width: geometry.size.width * 1.7, height: geometry.size.height * 1.5).opacity(0.7).position(x: screenWidth / 2, y: screenHeight * 0.52)
                     VStack(spacing: 0) {
-                        VStack { Image("SpurlyBannerBrandColor").resizable().scaledToFit().frame(height: 70).padding(.top, geometry.safeAreaInsets.top + 15); Spacer() }.frame(height: geometry.size.height * 0.1)
-                        Text("match their vibe. find your words.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 50)
-                        Text("just quicker with spurly.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal)
-                        Spacer(minLength: 80)
+                        VStack { Image("SpurlyBannerBrandColor").resizable().scaledToFit().frame(height: 100).padding(.top, geometry.safeAreaInsets.top + 15); Spacer() }.frame(height: geometry.size.height * 0.1)
+                        Spacer().frame(height: geometry.size.height * 0.01)
+                        Text("less guessing. more connecting.").font(Font.custom("SF Pro Text", size: 16).weight(.bold)).foregroundColor(.spurlyPrimaryBrand).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal).padding(.top, 35).shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4)
+                        Spacer().frame(height: geometry.size.height * 0.07)
                         VStack(alignment: .center, spacing: 0) {
-                            ProgressView(value: progress).progressViewStyle(LinearProgressViewStyle(tint: .spurlyAccent)).frame(width: geometry.size.width * cardWidthMultiplier * 0.8).padding(.bottom, 5).scaleEffect(x: 1, y: 1.2, anchor: .center).shadow(color: .black.opacity(0.8), radius: 5, x: 2, y: 2).frame(alignment: .center).padding(.horizontal)
-                            Text("(\(currentCardIndex + 1)/4) ").font(Font.custom("SF Pro Text", size: 12).weight(.regular)).foregroundColor(.spurlySecondaryText).frame(maxWidth: .infinity, alignment: .center).padding(.horizontal)
-                        }.padding(.bottom, 20)
+                            ZStack {
+                                Capsule()
+                                    .fill(Color.spurlyTertiaryBackground)
+                                    .frame(width: geometry.size.width * cardWidthMultiplier * 0.8, height: 6)
+                                    .opacity(0.6)
+                                    .shadow(color: .black.opacity(0.5), radius: 3, x: 3, y: 3)
+                                ProgressView(value: progress)
+                                    .progressViewStyle(LinearProgressViewStyle(tint: .spurlyHighlight))
+                                    .frame(width: geometry.size.width * cardWidthMultiplier * 0.8)
+                                    .scaleEffect(x: 1, y: 1.5, anchor: .center)
+                                    .opacity(0.8)
+                            }
+                            .padding(.bottom, 1)
+                            .padding(.horizontal)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Text("(\(currentCardIndex + 1)/4)")
+                                    .font(Font.custom("SF Pro Text", size: 12).weight(.regular))
+                                    .foregroundColor(.spurlyHighlight)
+                                Spacer()
+                                Button(action: {
+                                    if isAgeValidForSubmission {
+                                        currentCardIndex += 1
+                                    } else {
+                                        showAgeError = true
+                                    }
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Text("skip ahead")
+                                        Image(systemName: "arrow.right")
+                                    }
+                                }
+                                .font(Font.custom("SF Pro Text", size: 12).weight(.regular))
+                                .foregroundColor(.spurlyHighlight)
+                            }
+                            .frame(width: geometry.size.width * cardWidthMultiplier * 0.8)
+
+                        }
+                        .padding(.bottom, 15)
+                        Spacer().frame(height: geometry.size.height * 0.06)
                         Group {
                             switch currentCardIndex {
                                 case 0:
@@ -518,7 +532,8 @@ struct OnboardingView: View {
                             }
                         }
                         .frame(width: geometry.size.width * cardWidthMultiplier, height: geometry.size.height * cardHeightMultiplier)
-                        .padding(.bottom, 30)
+                        .padding(.bottom, 4)
+                        Spacer()
                         HStack {
                             if currentCardIndex > 0 {
                                 Button {
@@ -526,7 +541,7 @@ struct OnboardingView: View {
                                 } label: {
                                     Image(systemName: "arrow.left")
                                         .padding()
-                                        .background(Circle().fill(Color.spurlyPrimaryBrand.opacity(0.6)))
+                                        .background(Circle().fill(Color.spurlySecondaryButton.opacity(0.6)).shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4))
                                         .foregroundColor(.spurlyPrimaryBackground)
                                 }
                             } else {
@@ -562,14 +577,40 @@ struct OnboardingView: View {
                             } label: {
                                 Image(systemName: currentCardIndex < totalCards - 1 ? "arrow.right" : "checkmark")
                                     .padding()
-                                    .background(Circle().fill(isNextButtonDisabled ? Color.spurlySecondaryText.opacity(0.3) : Color.spurlyPrimaryBrand.opacity(0.6)))
+                                    .background(
+                                        Circle()
+                                            .fill(
+                                                isNextButtonDisabled ? Color.spurlySecondaryText
+                                                    .opacity(
+                                                        0.2
+                                                    ) : Color.spurlySecondaryButton
+                                                    .opacity(0.7)
+                                            ).shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4)
+                                    )
                                     .foregroundColor(Color.spurlyPrimaryBackground)
                             }
                         }
                         .padding(.top, 15)
                         .padding(.horizontal, geometry.size.width * (1.0 - cardWidthMultiplier) / 2.0)
-                        .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
+                        .padding(.bottom, 2)
+                        Spacer()
+                        VStack(spacing: 2) {
+                            Text("we care about protecting your data")
+                                .font(.footnote)
+                                .foregroundColor(.spurlySecondaryText)
+                                .opacity(0.6)
+                            Link(destination: URL(string: "https://example.com")!) {
+                                Text("learn more here")
+                                    .underline()
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.spurlySecondaryText)
+                                    .opacity(0.6)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 8)
                     }.padding(.bottom, geometry.safeAreaInsets.bottom + 5).navigationBarHidden(true).ignoresSafeArea(.keyboard, edges: .bottom)
+                        Spacer()
                 }
             }
         }
