@@ -11,7 +11,10 @@ import SwiftUI
 struct spurlyApp: App {
     var body: some Scene {
         WindowGroup {
-            OnboardingView()
+            NavigationStack {
+                OnboardingView()
+                
+            }
         }
     }
 }

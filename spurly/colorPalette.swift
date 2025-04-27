@@ -22,7 +22,7 @@ extension Color {
     static let spurlySecondaryButton = Color(hex: "#5FA8D3") //Picton Blue
     static let spurlyTertiaryButton = Color(hex: "#C80815") //Venetian Red
     static let spurlyCardBackground = Color(hex: "#EAF6FF") //Alice Blue
-    static let spurlyHighlight = Color(hex: "#5FA8D3") //Sky Blue
+    static let spurlyHighlight = Color(hex: "#9BC8FF") //Sky Blue
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
