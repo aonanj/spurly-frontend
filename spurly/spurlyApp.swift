@@ -12,8 +12,9 @@ struct spurlyApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                OnboardingView()
-                
+                //OnboardingView()
+                ContextInputView()
+
             }
         }
     }
