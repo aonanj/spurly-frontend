@@ -19,7 +19,10 @@ class AuthManager: ObservableObject {
     var isAuthenticated: Bool {
         // Simple check: authenticated if token exists and is not empty.
         // You might add token validation logic here later.
-        token != nil && !(token?.isEmpty ?? true)
+        //token != nil && !(token?.isEmpty ?? true)
+
+        // MARK: always return true for testing only
+        true
     }
 
     // Function to update state upon successful login/onboarding

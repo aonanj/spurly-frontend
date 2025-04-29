@@ -11,19 +11,22 @@ struct ContextInputView: View {
     // MARK: Access shared AuthManager from the environment
     @EnvironmentObject var authManager: AuthManager
 
+    @EnvironmentObject var sideMenuManager: SideMenuManager
+    @EnvironmentObject var connectionManager: ConnectionManager
+
     // MARK: – Context State
     @State private var conversationText: String = ""
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var conversationImages: [UIImage] = [] // Store loaded UIImages
-    @State private var selectedSituation: String = ""
-    @State private var quickTopic: String = ""
+    @State var selectedSituation: String = ""
+    @State var topic: String = ""
     @FocusState private var isConversationFocused: Bool
-    @FocusState private var isTopicFocused: Bool
+    @FocusState var isTopicFocused: Bool
 
     // MARK: – View State
     @State private var isSubmitting: Bool = false
-    @State private var submissionError: String? = nil // Holds error message
-    @State private var showTopicError: Bool = false
+    @State var submissionError: String? = nil // Holds error message
+    @State var showTopicError: Bool = false
     @State private var navigateToSuggestions: Bool = false // Controls navigation
     // @State private var generatedSpurs: [Spur] = [] // Example: To hold fetched spurs
 
@@ -32,17 +35,7 @@ struct ContextInputView: View {
     @State private var photoSubmissionError: String? = nil
     @State private var photosSubmittedSuccessfully: Bool = false // Optional: Track success
 
-    // MARK: – Configuration
-    private let situationOptions = [
-        "", "cold intro", "cta setup", "cta response",
-        "no response", "reengagement",
-        "recovery", "switch subject", "refine"
-    ]
-    // Using the set directly for efficient lookup
-    private let prohibitedTopics: Set<String> = [
-        "violence", "self harm", "suicide", "narcotics",
-        "drugs", "sexually suggestive", "explicit"
-    ]
+
     // Assume a structure for the spurs received from the backend
     // struct Spur: Decodable, Identifiable { /* ... properties ... */ let id = UUID() }
     // struct BackendResponse: Decodable { let spurs: [Spur] }
@@ -59,18 +52,12 @@ struct ContextInputView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // Background color
-                Color.spurlyPrimaryBackground
-                    .ignoresSafeArea()
-                    .zIndex(0) // Base layer
+                Color.tappablePrimaryBg
+                    .zIndex(0) // Background color layer
 
-                // Background Logo (Requirement 2 - Copied from OnboardingView)
-                Image("SpurlyBackgroundBrandColor")
-                    .resizable()
-                    .scaledToFit()
+                Image.tappableBgIcon
                     .frame(width: screenWidth * 1.5, height: screenHeight * 1.5)
-                    .opacity(0.7)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.45)
+                    .position(x: screenWidth / 2, y: screenHeight * 0.43)
                     .allowsHitTesting(false) // Make sure it doesn't block taps
                     .zIndex(1) // Above background color
 
@@ -80,16 +67,10 @@ struct ContextInputView: View {
                     // Header Row (Menu, Banner, Plus Button aligned horizontally)
                     HStack {
                         // Menu Button
-                        Button(action: openSideMenu) {
-                            Image("MenuIcon").imageScale(.large)
-                                .font(.title2)
-                                .foregroundColor(.spurlyPrimaryText)
-                                .shadow(
-                                    color: .spurlyPrimaryText.opacity(0.5),
-                                    radius: 5,
-                                    x: 3,
-                                    y: 3
-                                )
+                        Button(
+                            action: dummyFunction // MARK: Replace with sideMenuManager.openSideMenu
+                        ) {
+                            Image.menuIcon
                                 .frame(width: 44, height: 44) // Ensure tappable area
                         }
 
@@ -97,24 +78,16 @@ struct ContextInputView: View {
 
 
                         // Plus Button
-                        Button(action: openSideMenu) {
-                            Image("AddConnectionIcon").imageScale(.large)
-                                .font(.title2)
-                                .foregroundColor(.spurlyPrimaryText)
-                                .shadow(
-                                    color: .spurlyPrimaryText.opacity(0.5),
-                                    radius: 5,
-                                    x: 3,
-                                    y: 3
-                                )
+                        Button(
+                            action: dummyFunction // MARK: Replace with connectionManager.addNewConnection
+                        ) {
+                            Image.connectionIcon
                                 .frame(width: 44, height: 44) // Ensure tappable area
                         }
                     }.padding(.horizontal)
 
                     // Banner Image (within the HStack now)
-                    Image("SpurlyBannerBrandColor")
-                        .resizable()
-                        .scaledToFit()
+                    Image.bannerLogo
                         .frame(height: screenHeight * 0.1) // Adjust height to fit line
                         .padding(.horizontal)
                         // Minimal top padding, just safe area
@@ -122,10 +95,7 @@ struct ContextInputView: View {
 
 
                     // Subtitle Text (Moved below header HStack)
-                    Text("less guessing. more connecting.")
-                        .font(Font.custom("SF Pro Text", size: 16).weight(.bold))
-                        .foregroundColor(.spurlyPrimaryBrand)
-                        .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4)
+                    Text.bannerTag
                         .padding(.bottom, 15) // Add slight padding below subtitle
 
                     Spacer() // Pushes content down
@@ -136,7 +106,7 @@ struct ContextInputView: View {
                             TextEditor(text: $conversationText)
                                 .font(.caption)
                                 .focused($isConversationFocused)
-                                .foregroundColor(.spurlyPrimaryText)
+                                .foregroundColor(.primaryText)
                                 .padding(12)
                                 .padding(.bottom, 40) // Space for buttons
                                 .scrollContentBackground(.hidden) // Needed to make background transparent
@@ -156,7 +126,9 @@ struct ContextInputView: View {
                                     Spacer()
                                     HStack(spacing: 8) {
                                         ForEach(conversationImages.indices, id: \.self) { index in
-                                            imageThumbnailView(image: conversationImages[index], index: index)
+                                            ImageThumbnailView(image: conversationImages[index]) {
+                                                removeImage(at: index)
+                                            }
                                         }
                                         Spacer()
                                     }
@@ -205,7 +177,7 @@ struct ContextInputView: View {
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 10)
-                                    .background(Capsule().fill(photosSubmittedSuccessfully ? Color.green.opacity(0.7) : Color.spurlyAccent1.opacity(0.8))) // Green on success
+                                    .background(Capsule().fill(photosSubmittedSuccessfully ? Color.green.opacity(0.7) : Color.accent1.opacity(0.8))) // Green on success
                                     .foregroundColor(.white)
                                     .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
                                 }
@@ -225,7 +197,7 @@ struct ContextInputView: View {
                          }
                     } // End ZStack for TextEditor overlay
                     .frame(width: geo.size.width * 0.89, height: geo.size.height * 0.5) // Reduced width to fit card
-                    .background(Color.spurlyCardBackground) // Use defined color
+                    .background(Color.cardBg) // Use defined color
                     .opacity(0.75).cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -233,8 +205,8 @@ struct ContextInputView: View {
                                 LinearGradient(
                                     gradient: Gradient(
                                         colors: [
-                                            Color.spurlyCardBackground.opacity(0.6),
-                                            Color.spurlyHighlight.opacity(0.8)
+                                            Color.cardBg.opacity(0.6),
+                                            Color.highlight.opacity(0.8)
                                         ]
                                     ),
                                     startPoint: .topLeading,
@@ -252,8 +224,14 @@ struct ContextInputView: View {
                     HStack(alignment: .top, spacing: 8) {
                         // Situation Picker & Topic Field Container
                         VStack(alignment: .leading, spacing: 12) {
-                            situationPicker(geo: geo) // Use helper view
-                            topicField(geo: geo)      // Use helper view
+                            SituationPicker(
+                                selectedSituation: $selectedSituation
+                            ) // Use helper view
+                            TopicFieldView(
+                                topic: $topic,
+                                showTopicError: $showTopicError,
+                                isTopicFocused: $isTopicFocused,
+                            )      // Use helper view
                         }
                         .frame(width: geo.size.width * 0.55) // Keep reduced width
 
@@ -266,13 +244,16 @@ struct ContextInputView: View {
                     .padding(.horizontal) // Overall padding for the row
                     .padding(.top, 10) // Add top padding for spacing
                     // Display General Submission Error Message
-                    submissionErrorView // Use helper view
+                    SubmissionErrorView (
+                        submissionError: $submissionError
+                    ) // Use helper view
 
                     Spacer(minLength: 25) // Pushes footer down
 
                     // Footer Text and Link
                     footerView // Use helper view
                     .padding(.bottom, geo.safeAreaInsets.bottom > 0 ? 5 : 15) // Adjust padding based on safe area
+                    .frame(maxWidth: .infinity)
 
                 } // Main content VStack
                 .zIndex(2) // Above background elements
@@ -287,6 +268,12 @@ struct ContextInputView: View {
             .navigationBarHidden(true) // Keep navigation bar hidden if desired
             .ignoresSafeArea(.keyboard) // Keep content visible when keyboard appears
         } // GeometryReader
+    }
+
+    // MARK: – DUMMY FUNCTION
+    // Environment Objects are not available in previews, so we need to provide dummy values
+    private func dummyFunction() {
+        // This function is just a placeholder to avoid errors in previews
     }
 
     // MARK: - Action for Photo OCR Submission
@@ -315,7 +302,7 @@ struct ContextInputView: View {
         // Adjust compression quality as needed. Consider file size limits.
         let imageDatas: [String] = conversationImages.compactMap { image in
             // Ensure orientation is correct before getting data
-            guard let orientedImage = imageWithCorrectOrientation(image), 
+            guard let orientedImage = imageWithCorrectOrientation(image),
                   let imageData = orientedImage.jpegData(compressionQuality: 0.7) else {
                 print("Warning: Could not process one of the images.")
                 return nil
@@ -416,71 +403,14 @@ struct ContextInputView: View {
     }
 
 
-    // Helper function to correct image orientation (Important for uploads)
-    // Add this function within the ContextInputView struct
-     private func imageWithCorrectOrientation(_ image: UIImage) -> UIImage? {
-         // Check if orientation is already correct
-         guard image.imageOrientation != .up else { return image }
-
-         // Recalculate transform based on orientation
-         var transform = CGAffineTransform.identity
-         switch image.imageOrientation {
-             case .down, .downMirrored:
-                 transform = transform.translatedBy(x: image.size.width, y: image.size.height)
-                 transform = transform.rotated(by: .pi)
-             case .left, .leftMirrored:
-                 transform = transform.translatedBy(x: image.size.width, y: 0)
-                 transform = transform.rotated(by: .pi / 2)
-             case .right, .rightMirrored:
-                 transform = transform.translatedBy(x: 0, y: image.size.height)
-                 transform = transform.rotated(by: -.pi / 2)
-             case .up, .upMirrored:
-                 break
-             @unknown default:
-                 break
-         }
-
-         // Apply mirroring if needed
-         switch image.imageOrientation {
-             case .upMirrored, .downMirrored:
-                 transform = transform.translatedBy(x: image.size.width, y: 0)
-                 transform = transform.scaledBy(x: -1, y: 1)
-             case .leftMirrored, .rightMirrored:
-                 transform = transform.translatedBy(x: image.size.height, y: 0)
-                 transform = transform.scaledBy(x: -1, y: 1)
-             default:
-                 break
-         }
-
-         // Create context and draw the new image
-         guard let cgImage = image.cgImage, let colorSpace = cgImage.colorSpace else { return nil }
-         guard let ctx = CGContext(data: nil, width: Int(image.size.width), height: Int(image.size.height),
-                                   bitsPerComponent: cgImage.bitsPerComponent, bytesPerRow: 0,
-                                   space: colorSpace, bitmapInfo: cgImage.bitmapInfo.rawValue) else { return nil }
-
-         ctx.concatenate(transform)
-
-         switch image.imageOrientation {
-             case .left, .leftMirrored, .right, .rightMirrored:
-                 ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: image.size.height, height: image.size.width))
-             default:
-                 ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: image.size.width, height: image.size.height))
-         }
-
-         // Get the new image
-         guard let cgImg = ctx.makeImage() else { return nil }
-         return UIImage(cgImage: cgImg)
-     }
-
-
-    // MARK: – Actions
+     // MARK: – Actions
 
     private func clearConversation() {
         hideKeyboard()
         conversationText = ""
         selectedPhotos = [] // Clear picker selection
         conversationImages.removeAll() // Clear loaded images
-        quickTopic = ""
+        topic = ""
         selectedSituation = ""
         showTopicError = false
         submissionError = nil
@@ -554,6 +484,7 @@ struct ContextInputView: View {
     }
 
 
+
     private func submitContext() {
         guard let token = authManager.token else {
             print("Error: No token available for submission.")
@@ -567,24 +498,6 @@ struct ContextInputView: View {
         submissionError = nil // Clear previous errors
         showTopicError = false // Clear topic error
 
-        // 1. Validate Topic
-        let lowercasedTopic = quickTopic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if !lowercasedTopic.isEmpty {
-             // Check if any part of the input topic contains a prohibited word
-             var isProhibited = false
-             for prohibited in prohibitedTopics {
-                 if lowercasedTopic.contains(prohibited) {
-                     isProhibited = true
-                     break
-                 }
-             }
-             if isProhibited {
-                 showTopicError = true
-                 quickTopic = "" // Clear the invalid topic
-                 print("Validation Error: Prohibited topic detected.")
-                 return // Stop submission
-             }
-         }
 
 
         // 2. Prepare Payload (Add images later if needed)
@@ -600,7 +513,7 @@ struct ContextInputView: View {
         let payload = ContextPayload(
             conversation: conversationText.isEmpty ? nil : conversationText,
             situation: selectedSituation.isEmpty ? nil : selectedSituation,
-            topic: lowercasedTopic.isEmpty ? nil : lowercasedTopic, // Send validated topic
+            topic: topic.isEmpty ? nil : topic, // Send validated topic
             userId: userId,
             // images: encodeImagesIfNeeded(conversationImages) // Example function call
         )
@@ -699,88 +612,6 @@ struct ContextInputView: View {
         }.resume()
     }
 
-    // MARK: – Placeholder Actions (Implement these based on your app structure)
-
-    private func openSideMenu() {
-        hideKeyboard()
-        print("Action: Open Side Menu (Not Implemented)")
-        // TODO: Implement side menu presentation logic
-    }
-
-    private func showPOISketch() {
-        hideKeyboard()
-        print("Action: Show POI Sketch (Not Implemented)")
-        // TODO: Implement POI sketch presentation logic
-    }
-
-    // Helper to dismiss keyboard (using extension from OnboardingView)
-    private func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
-    // MARK: - Helper Button Styles (for cleaner overlay code)
-
-    private var clearButtonStyle: some View {
-         Image(systemName: "xmark")
-             .padding(10)
-             .background(Circle().fill(Color.spurlyAccent1.opacity(0.8)))
-             .foregroundColor(.white)
-             .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
-     }
-
-     private var photosPickerStyle: some View {
-          Image(systemName: "photo.on.rectangle.angled")
-              .padding(10)
-              .background(Circle().fill(Color.spurlyAccent1.opacity(0.8)))
-              .foregroundColor(.white)
-              .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
-      }
-
-    // MARK: - Helper Image Thumbnail View
-
-    private func imageThumbnailView(image: UIImage, index: Int) -> some View {
-         Image(uiImage: image)
-             .resizable().scaledToFill().frame(width: 60, height: 60)
-             .clipped().cornerRadius(8)
-             .shadow(color: .black.opacity(0.1), radius: 2, x: 1, y: 1)
-             .overlay(alignment: .topTrailing) {
-                 Button { removeImage(at: index) } label: {
-                     Image(systemName: "xmark.circle.fill")
-                         .foregroundColor(.spurlyAccent2.opacity(0.9))
-                         .background(Circle().fill(.white.opacity(0.7)))
-                         .font(.callout)
-                 }.padding(4)
-             }
-     }
-
-     // MARK: - Helper Footer View
-
-     private var footerView: some View {
-          VStack(spacing: 2) {
-               Text("we care about protecting your data")
-                   .font(.footnote).foregroundColor(.spurlySecondaryText).opacity(0.6)
-               // Ensure you have a valid URL here
-               Link(destination: URL(string: "https://example.com/privacy")!) {
-                   Text("learn more here")
-                       .underline().font(.footnote)
-                       .foregroundStyle(Color.spurlySecondaryText).opacity(0.6)
-               }
-           }
-           .frame(maxWidth: .infinity)
-     }
-
-     // MARK: - Helper Submission Error View
-
-     @ViewBuilder
-      private var submissionErrorView: some View {
-           if let errorMsg = submissionError {
-                Text("Error: \(errorMsg)")
-                    .font(.caption).foregroundColor(.red).padding(.horizontal).multilineTextAlignment(.center)
-            } else {
-                EmptyView()
-            }
-      }
-
       // MARK: - Helper Spur Generation Button
 
       private var spurGenerationButton: some View {
@@ -797,45 +628,6 @@ struct ContextInputView: View {
           .frame(width: 80, height: 80)
           .padding(.top, 20)
           .disabled(isSubmitting)// || (conversationText.isEmpty && conversationImages.isEmpty))
-      }
-
-      // MARK: - Helper Picker/Topic Input Fields
-
-      // Extracted Situation Picker into a helper function
-      @ViewBuilder
-      private func situationPicker(geo: GeometryProxy) -> some View {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("situation")
-                    .font(.subheadline)
-                    .bold()
-                    .foregroundColor(.spurlySecondaryText)
-                CustomPickerStyle(
-                    title: "Select situation", selection: $selectedSituation,
-                    options: situationOptions, textMapping: { $0.isEmpty ? "Select..." : $0 }
-                )
-                .opacity(inputBackgroundOpacity + 0.05) // Apply opacity
-            }
-      }
-
-      // Extracted Topic Field into a helper function
-      @ViewBuilder
-      private func topicField(geo: GeometryProxy) -> some View {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("topic").font(.subheadline).bold().foregroundColor(.spurlySecondaryText)
-                TextField("add topic...", text: $quickTopic)
-                    .focused($isTopicFocused)
-                    .textFieldStyle(CustomTextFieldStyle()) // Assumes this style exists
-                    .limitInputLength(for: $quickTopic, limit: 50) // Assumes this modifier exists
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(showTopicError ? Color.red : Color.clear, lineWidth: 1.5))
-                    .onChange(of: quickTopic) { _, _ in showTopicError = false }
-                    .opacity(inputBackgroundOpacity + 0.05) // Apply opacity
-
-                // Display Topic Error Message inline
-                if showTopicError {
-                    Text("Topic not allowed.")
-                        .font(.caption).foregroundColor(.red).padding(.leading, 4)
-                }
-            }
       }
 
 
