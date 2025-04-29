@@ -1,9 +1,10 @@
 //
-//  colorPalette.swift
+//  ColorPalette.swift
 //  spurly
 //
-//  Created by Alex Osterlind on 4/26/25.
+//  Created by Alex Osterlind on 4/29/25.
 //
+
 import SwiftUI
 
 extension Color {
