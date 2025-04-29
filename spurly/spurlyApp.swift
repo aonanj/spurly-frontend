@@ -9,13 +9,20 @@ import SwiftUI
 
 @main
 struct spurlyApp: App {
+
+    @StateObject private var authManager = AuthManager()
+
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                //OnboardingView()
-                ContextInputView()
-
+                if authManager.isAuthenticated {
+                    ContextInputView()
+                    //Other views for authenticated users
+                } else {
+                    OnboardingView()
+                }
             }
+            .environmentObject(authManager) // Pass AuthManager to the environment
         }
     }
 }

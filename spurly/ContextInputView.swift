@@ -8,6 +8,9 @@ import SwiftUI
 import PhotosUI // Ensure PhotosUI is imported
 
 struct ContextInputView: View {
+    // MARK: Access shared AuthManager from the environment
+    @EnvironmentObject var authManager: AuthManager
+
     // MARK: – Context State
     @State private var conversationText: String = ""
     @State private var selectedPhotos: [PhotosPickerItem] = []
@@ -23,6 +26,11 @@ struct ContextInputView: View {
     @State private var showTopicError: Bool = false
     @State private var navigateToSuggestions: Bool = false // Controls navigation
     // @State private var generatedSpurs: [Spur] = [] // Example: To hold fetched spurs
+
+    // MARK: – View State for Photo OCR
+    @State private var isSubmittingPhotos: Bool = false
+    @State private var photoSubmissionError: String? = nil
+    @State private var photosSubmittedSuccessfully: Bool = false // Optional: Track success
 
     // MARK: – Configuration
     private let situationOptions = [
@@ -143,27 +151,78 @@ struct ContextInputView: View {
 
                             // Image Thumbnails Display
                             if !conversationImages.isEmpty {
-                                ScrollView(.horizontal, showsIndicators: false) {
+                               // ScrollView(.horizontal, showsIndicators: false) {
+                                VStack() {
+                                    Spacer()
                                     HStack(spacing: 8) {
                                         ForEach(conversationImages.indices, id: \.self) { index in
                                             imageThumbnailView(image: conversationImages[index], index: index)
                                         }
+                                        Spacer()
                                     }
                                     .padding(.leading) // Use leading padding to align with card edge
                                 }
                                 .frame(height: geo.size.height * 0.4)
                              }
                         }
-                        // Overlaid Buttons
+                        // Buttons Area (Clear, and Conditional Picker/Submit)
                         HStack {
+                            // Clear Button (remains the same)
                             Button(action: clearConversation) { clearButtonStyle }
-                                .disabled(conversationText.isEmpty && conversationImages.isEmpty)
-                            Spacer()
-                            PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 5, matching: .images) { photosPickerStyle }
-                                .onChange(of: selectedPhotos) { _, newItems in loadSelectedImages(from: newItems) }
+                                .disabled(conversationText.isEmpty && conversationImages.isEmpty && selectedPhotos.isEmpty) // Also disable if picker selection is empty
+
+                            Spacer() // Pushes buttons apart
+
+                            // --- Conditional Photo Button ---
+                            if conversationImages.isEmpty {
+                                // Show PhotosPicker if no images are loaded yet
+                                PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 5, matching: .images) {
+                                     photosPickerStyle // Use your existing helper
+                                 }
+                                .onChange(of: selectedPhotos) { _, newItems in
+                                    // Clear previous errors/success when new photos are chosen
+                                    photoSubmissionError = nil
+                                    photosSubmittedSuccessfully = false
+                                    loadSelectedImages(from: newItems)
+                                }
+                                .disabled(isSubmittingPhotos) // Disable while submitting photos
+
+                            } else {
+                                // Show Submit Photos Button if images are loaded
+                                Button(action: submitPhotosForOCR) {
+                                    HStack {
+                                        // Optionally show ProgressView when submitting photos
+                                        if isSubmittingPhotos {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.8) // Smaller progress view
+                                        }
+                                        // Change icon/text based on state
+                                        Image(systemName: photosSubmittedSuccessfully ? "checkmark.circle.fill" : "arrow.up.doc.on.clipboard")
+                                        Text(photosSubmittedSuccessfully ? "Photos Sent" : (isSubmittingPhotos ? "Sending..." : "Send Photos"))
+                                            .font(.caption) // Smaller text
+                                            .lineLimit(1)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(Capsule().fill(photosSubmittedSuccessfully ? Color.green.opacity(0.7) : Color.spurlyAccent1.opacity(0.8))) // Green on success
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
+                                }
+                                .disabled(isSubmittingPhotos || photosSubmittedSuccessfully) // Disable while submitting or if already successful
+                            }
+                            // --- End Conditional Photo Button ---
                         }
                         .padding(.horizontal, 15)
                         .padding(.bottom, 10)
+                        // Optional: Display photo submission errors nearby
+                        if let photoError = photoSubmissionError {
+                             Text("Photo Error: \(photoError)")
+                                 .font(.caption)
+                                 .foregroundColor(.red)
+                                 .padding(.horizontal, 15)
+                                 .padding(.bottom, 5) // Adjust positioning as needed
+                         }
                     } // End ZStack for TextEditor overlay
                     .frame(width: geo.size.width * 0.89, height: geo.size.height * 0.5) // Reduced width to fit card
                     .background(Color.spurlyCardBackground) // Use defined color
@@ -209,7 +268,7 @@ struct ContextInputView: View {
                     // Display General Submission Error Message
                     submissionErrorView // Use helper view
 
-                    Spacer() // Pushes footer down
+                    Spacer(minLength: 25) // Pushes footer down
 
                     // Footer Text and Link
                     footerView // Use helper view
@@ -229,6 +288,189 @@ struct ContextInputView: View {
             .ignoresSafeArea(.keyboard) // Keep content visible when keyboard appears
         } // GeometryReader
     }
+
+    // MARK: - Action for Photo OCR Submission
+    private func submitPhotosForOCR() {
+        guard let token = authManager.token else {
+            print("Error: No token available for photo submission.")
+            photoSubmissionError = "No token available for photo submission."
+            return
+        }
+
+        let userId = authManager.userId // Get userId from AuthManager
+
+        guard !conversationImages.isEmpty else {
+            print("No images to submit for OCR.")
+            return
+        }
+
+        hideKeyboard()
+        photoSubmissionError = nil // Clear previous errors
+        isSubmittingPhotos = true // Show loading state
+        photosSubmittedSuccessfully = false // Reset success state
+
+        print("Preparing \(conversationImages.count) images for OCR submission...")
+
+        // 1. Prepare Image Data (Example: JPEG base64 encoding)
+        // Adjust compression quality as needed. Consider file size limits.
+        let imageDatas: [String] = conversationImages.compactMap { image in
+            // Ensure orientation is correct before getting data
+            guard let orientedImage = imageWithCorrectOrientation(image), 
+                  let imageData = orientedImage.jpegData(compressionQuality: 0.7) else {
+                print("Warning: Could not process one of the images.")
+                return nil
+            }
+            return imageData.base64EncodedString()
+        }
+
+        guard !imageDatas.isEmpty else {
+            photoSubmissionError = "Could not process images for upload."
+            isSubmittingPhotos = false
+            return
+        }
+
+        // 2. Prepare Payload
+        struct OcrPayload: Codable {
+            let images: [String] // Array of base64 encoded image strings
+            let userId: String?
+        }
+        let payload = OcrPayload(images: imageDatas, userId: userId)
+
+        // 3. Network Request
+        // --- Replace with your actual OCR backend URL ---
+        guard let url = URL(string: "https://your.backend/api/ocr") else { // (placeholder URL)
+            photoSubmissionError = "Invalid OCR backend URL."
+            isSubmittingPhotos = false
+            print("Error: Invalid OCR backend URL configured.")
+            return
+        }
+        // --- ---
+
+        guard let encodedPayload = try? JSONEncoder().encode(payload) else {
+            photoSubmissionError = "Failed to prepare photo data."
+            isSubmittingPhotos = false
+            print("Error: Failed to encode OCR payload.")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = encodedPayload
+
+        print("Submitting photos to OCR backend...")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            // Ensure UI updates happen on the main thread
+            DispatchQueue.main.async {
+                isSubmittingPhotos = false // Stop loading indicator
+
+                // Handle Network Error
+                if let error = error {
+                    photoSubmissionError = "Network error: \(error.localizedDescription)"
+                    print("OCR Network Error: \(error.localizedDescription)")
+                    return
+                }
+
+                // Check HTTP Response Status
+                guard let httpResponse = response as? HTTPURLResponse else {
+                     photoSubmissionError = "Invalid response from server."
+                     print("OCR Error: No valid HTTPURLResponse received.")
+                     return
+                 }
+
+                 print("OCR Received HTTP Status: \(httpResponse.statusCode)")
+
+                 guard (200...299).contains(httpResponse.statusCode) else {
+                    var serverMsg = "Photo upload failed (\(httpResponse.statusCode))."
+                     if let responseData = data, let errorString = String(data: responseData, encoding: .utf8), !errorString.isEmpty {
+                         serverMsg += " Details: \(errorString)"
+                     }
+                    photoSubmissionError = serverMsg
+                    print("OCR Error: \(serverMsg)")
+                    return
+                }
+
+                // --- SUCCESS ---
+                print("Photos submitted successfully for OCR.")
+                photosSubmittedSuccessfully = true // Set success state
+                // Optionally clear photos after successful submission?
+                // self.conversationImages = []
+                // self.selectedPhotos = []
+
+                // TODO: Handle OCR results if the backend returns them in the response
+                /*
+                 if let responseData = data {
+                     // Try to decode OCR results (replace with your actual response model)
+                     // struct OcrResponse: Decodable { let results: [String]? }
+                     // if let decodedResponse = try? JSONDecoder().decode(OcrResponse.self, from: responseData) {
+                     //    print("Received OCR results: \(decodedResponse.results ?? [])")
+                     //    // Integrate results into conversationText or elsewhere?
+                     // }
+                 }
+                 */
+
+            }
+        }.resume()
+    }
+
+
+    // Helper function to correct image orientation (Important for uploads)
+    // Add this function within the ContextInputView struct
+     private func imageWithCorrectOrientation(_ image: UIImage) -> UIImage? {
+         // Check if orientation is already correct
+         guard image.imageOrientation != .up else { return image }
+
+         // Recalculate transform based on orientation
+         var transform = CGAffineTransform.identity
+         switch image.imageOrientation {
+             case .down, .downMirrored:
+                 transform = transform.translatedBy(x: image.size.width, y: image.size.height)
+                 transform = transform.rotated(by: .pi)
+             case .left, .leftMirrored:
+                 transform = transform.translatedBy(x: image.size.width, y: 0)
+                 transform = transform.rotated(by: .pi / 2)
+             case .right, .rightMirrored:
+                 transform = transform.translatedBy(x: 0, y: image.size.height)
+                 transform = transform.rotated(by: -.pi / 2)
+             case .up, .upMirrored:
+                 break
+             @unknown default:
+                 break
+         }
+
+         // Apply mirroring if needed
+         switch image.imageOrientation {
+             case .upMirrored, .downMirrored:
+                 transform = transform.translatedBy(x: image.size.width, y: 0)
+                 transform = transform.scaledBy(x: -1, y: 1)
+             case .leftMirrored, .rightMirrored:
+                 transform = transform.translatedBy(x: image.size.height, y: 0)
+                 transform = transform.scaledBy(x: -1, y: 1)
+             default:
+                 break
+         }
+
+         // Create context and draw the new image
+         guard let cgImage = image.cgImage, let colorSpace = cgImage.colorSpace else { return nil }
+         guard let ctx = CGContext(data: nil, width: Int(image.size.width), height: Int(image.size.height),
+                                   bitsPerComponent: cgImage.bitsPerComponent, bytesPerRow: 0,
+                                   space: colorSpace, bitmapInfo: cgImage.bitmapInfo.rawValue) else { return nil }
+
+         ctx.concatenate(transform)
+
+         switch image.imageOrientation {
+             case .left, .leftMirrored, .right, .rightMirrored:
+                 ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: image.size.height, height: image.size.width))
+             default:
+                 ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: image.size.width, height: image.size.height))
+         }
+
+         // Get the new image
+         guard let cgImg = ctx.makeImage() else { return nil }
+         return UIImage(cgImage: cgImg)
+     }
 
 
     // MARK: – Actions
@@ -313,6 +555,14 @@ struct ContextInputView: View {
 
 
     private func submitContext() {
+        guard let token = authManager.token else {
+            print("Error: No token available for submission.")
+            submissionError = "No token available for submission."
+            return
+        }
+
+        let userId = authManager.userId // Get userId from AuthManager
+
         hideKeyboard()
         submissionError = nil // Clear previous errors
         showTopicError = false // Clear topic error
@@ -342,14 +592,16 @@ struct ContextInputView: View {
             let conversation: String?
             let situation: String?
             let topic: String?
-            // Add image data if your backend expects it
+            let userId: String?
+             // Add image data if your backend expects it
             // let images: [String]? // e.g., base64 encoded strings
         }
 
         let payload = ContextPayload(
             conversation: conversationText.isEmpty ? nil : conversationText,
             situation: selectedSituation.isEmpty ? nil : selectedSituation,
-            topic: lowercasedTopic.isEmpty ? nil : lowercasedTopic // Send validated topic
+            topic: lowercasedTopic.isEmpty ? nil : lowercasedTopic, // Send validated topic
+            userId: userId,
             // images: encodeImagesIfNeeded(conversationImages) // Example function call
         )
 
@@ -372,7 +624,7 @@ struct ContextInputView: View {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         // Add Authentication headers if needed (e.g., using the token from onboarding)
-        // request.setValue("Bearer \(userToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.httpBody = encodedPayload
 
         isSubmitting = true // Start loading indicator
@@ -593,13 +845,14 @@ struct ContextInputView: View {
 
 // MARK: - Preview
 
+// MARK: - Preview Provider Update
 #if DEBUG
 struct ContextInputView_Previews: PreviewProvider {
     static var previews: some View {
-        // Wrap in NavigationView for previewing navigation aspects if needed
         NavigationView {
+            // Remove initializer arguments and inject a dummy AuthManager environment object
             ContextInputView()
-                .previewDevice("iPhone 14 Pro") // Example device
+                .environmentObject(AuthManager(userId: "previewUser123", token: "previewTokenAbc")) // Add this
         }
     }
 }

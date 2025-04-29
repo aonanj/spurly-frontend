@@ -473,6 +473,7 @@ struct LifestyleCardContent: View {
 
 
 struct OnboardingView: View {
+    @EnvironmentObject var authManager: AuthManager
     @State private var currentCardIndex = 0; let totalCards = 4
     @State private var name = ""
     @State private var age: Int? = nil
@@ -493,7 +494,6 @@ struct OnboardingView: View {
     @State private var showAgeError = false
     @State private var showSuccessOverlay = false
     @State private var successMessage = ""
-    @State private var navigateToContextInput = false
     @State private var showErrorOverlay = false
     @State private var errorMessage = ""
     @State private var isSubmitting = false
@@ -677,8 +677,7 @@ struct OnboardingView: View {
                     .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
                 }
                 .navigationBarHidden(true)
-                .navigationDestination(isPresented: $navigateToContextInput) {
-                    ContextInputView()  }
+
                 if showSuccessOverlay {
                     // Dimmed background
                     Color.spurlyPrimaryText.opacity(0.5)
@@ -686,7 +685,6 @@ struct OnboardingView: View {
                         .transition(.opacity)
                         .onTapGesture {
                             showSuccessOverlay = false
-                            navigateToContextInput = true
                         }
 
                     // Message Box
@@ -711,8 +709,13 @@ struct OnboardingView: View {
                         Spacer()
                     }
                     .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                    //TODO: Add overlay message if an Error is returned
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            showSuccessOverlay = false
+                        }
+                    }
                 }
+
                 if showErrorOverlay {
                     // Dimmed background - Tappable to dismiss
                     Color.black.opacity(0.5)
@@ -761,10 +764,15 @@ struct OnboardingView: View {
                         .padding(.horizontal, 40) // Padding for the whole box horizontally
                         Spacer() // Push to center vertically
                     }
+                    .onTapGesture {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showSuccessOverlay = false // Dismiss on tap
+                        }
+                    }
                     .transition(.opacity.animation(.easeInOut(duration: 0.3))) // Fade transition
                 }
-            }.ignoresSafeArea(.container, edges: .all)
-
+            }
+            .ignoresSafeArea(.container, edges: .all)
         }
     }
 
@@ -844,7 +852,14 @@ struct OnboardingView: View {
                 do {
                     let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData)
                     print("Success! User ID: \(decodedResponse.user_id), Token: \(decodedResponse.token)")
-                    // --- TODO: Securely store user_id and token ---
+                    do {
+                        let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData)
+                        print("Success! User ID: \(decodedResponse.user_id), Token received.")
+                        completion(.success(decodedResponse)) // Call completion with SUCCESS
+                    } catch let decodingError {
+                        print("error: Failed to decode response: \(decodingError)")
+                        completion(.failure(decodingError)) // Call completion with decoding error
+                    }
                     completion(.success(decodedResponse)) // Call completion with SUCCESS
                 } catch let decodingError {
                     print("error: Failed to decode response: \(decodingError)")
@@ -867,27 +882,22 @@ struct OnboardingView: View {
         // and set isSubmitting = true here to show a loading indicator
 
         print("Submitting onboarding data...")
+        isSubmitting = true // Show loading indicator
 
-        // Call the refactored function with a completion handler
+        
         sendOnboardingData { [self] result in // Use [self] to capture self
-            // Optional: isSubmitting = false // Hide loading indicator
+            isSubmitting = false // Hide loading indicator
 
             switch result {
             case .success(let onboardingResponse):
                 // --- SUCCESS CASE ---
                 // Network call succeeded! Show message and schedule navigation.
-                print("Onboarding data submission successful. User ID: \(onboardingResponse.user_id)")
+                print("Onboarding data submission successful.")
+                authManager.login(userId: onboardingResponse.user_id, token: onboardingResponse.token)
 
                 let displayName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "User" : name
                 self.successMessage = "Welcome \(displayName)! Your Spurly account was successfully created."
                 self.showSuccessOverlay = true // Show success message overlay NOW
-
-                // Schedule hiding the overlay and navigating after a delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { // 2-second delay AFTER success
-                    self.showSuccessOverlay = false // Hide the overlay
-                    self.navigateToContextInput = true // Trigger navigation
-                    print("Attempting navigation to ContextInputView...")
-                }
 
             case .failure(let error):
                 print("Onboarding data submission failed: \(error.localizedDescription)")
@@ -910,11 +920,14 @@ struct OnboardingView: View {
 }
 
 
+// MARK: - Preview Provider Update
 #if DEBUG
-struct OnboardingViewPreviewWrapper: View {
-
-    var body: some View { OnboardingView() }
+struct OnboardingView_Previews: PreviewProvider {
+    static var previews: some View {
+        // Inject a dummy AuthManager for the preview
+        OnboardingView()
+            .environmentObject(AuthManager()) // Add this line
+    }
 }
-struct OnboardingView_Previews: PreviewProvider { static var previews: some View { OnboardingView() } }
 #endif
 
