@@ -7,6 +7,12 @@
 import SwiftUI
 import PhotosUI // Ensure PhotosUI is imported
 
+enum ContextInputMode: String, CaseIterable, Identifiable {
+    case photos = "Photos"
+    case text = "Text"
+    var id: String { self.rawValue }
+}
+
 struct ContextInputView: View {
     // MARK: Access shared AuthManager from the environment
     @EnvironmentObject var authManager: AuthManager
@@ -30,12 +36,28 @@ struct ContextInputView: View {
     @State private var navigateToSuggestions: Bool = false // Controls navigation
     // @State private var generatedSpurs: [Spur] = [] // Example: To hold fetched spurs
 
+    // MARK: - State for Input Mode
+    @State private var inputMode: ContextInputMode = .photos // Default to photos
+
+    // MARK: - State for Text Input
+    @State private var newMessageText: String = ""
+    @State private var selectedSender: MessageSender = .user // Default sender
+
     // MARK: – View State for Photo OCR
     @State private var isSubmittingPhotos: Bool = false
     @State private var photoSubmissionError: String? = nil
     @State private var photosSubmittedSuccessfully: Bool = false // Optional: Track success
 
+    @State private var conversationMessages: [ConversationMessage] = []
+    @State private var editingMessageId: UUID? = nil
+    @State private var messageTextBeingEdited: String = ""
 
+    private var editingMessageBinding: Binding<ConversationMessage>? {
+        guard let id = editingMessageId,
+              let index = conversationMessages.firstIndex(where: { $0.id == id })
+        else { return nil }
+        return $conversationMessages[index]
+    }
     // Assume a structure for the spurs received from the backend
     // struct Spur: Decodable, Identifiable { /* ... properties ... */ let id = UUID() }
     // struct BackendResponse: Decodable { let spurs: [Spur] }
@@ -101,25 +123,92 @@ struct ContextInputView: View {
                     Spacer() // Pushes content down
                     // Conversation Input Card with Opacity
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: 8) {
+                        // --- NEW: Input Mode Picker ---
+                        Picker("Input Mode", selection: $inputMode) {
+                            ForEach(ContextInputMode.allCases) { mode in
+                                Text(mode.rawValue).tag(mode)
+                                    //.font(.caption)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .scaleEffect(0.85) // Slightly smaller picker
+                        .padding(.horizontal, geo.size.width * 0.1) // Adjust padding to match card width
+                        .padding(.top, 8) // Add top padding for spacing
+                        .onChange(of: inputMode) { _, _ in
+                            print("Input mode changed to \(inputMode.rawValue). Clearing display area.")
+                            // Clear the data relevant to the conversation display/input
+                            conversationMessages.removeAll()
+                            conversationImages.removeAll()
+                            selectedPhotos.removeAll() // Clear picker selection
+                            newMessageText = ""         // Clear manual input field
+                            photoSubmissionError = nil  // Clear photo errors
+                            photosSubmittedSuccessfully = false // Reset photo success state
+                        }
+
                         ZStack {
-                            TextEditor(text: $conversationText)
-                                .font(.caption)
-                                .focused($isConversationFocused)
-                                .foregroundColor(.primaryText)
-                                .padding(12)
-                                .padding(.bottom, 40) // Space for buttons
-                                .scrollContentBackground(.hidden) // Needed to make background transparent
-                                .background(
-                                    Color.white
-                                        .opacity(inputBackgroundOpacity) // Apply opacity here
-                                )
-                                .cornerRadius(12)
-                                .frame(minHeight: geo.size.height * 0.25, maxHeight: geo.size.height * 0.45)
+                            ScrollViewReader { proxy in // Optional: Allows scrolling to specific messages
+                                ScrollView {
+                                    VStack(alignment: .leading, spacing: 8) { // Use VStack for messages
+                                        ForEach($conversationMessages) { $message in // Use binding ($)
+                                            MessageRow(message: $message) // Pass binding to row
+                                                .padding(.horizontal, 10)
+                                                .background( // Subtle background highlight for selection
+                                                    (editingMessageId == message.id) ? Color.yellow.opacity(0.3) : Color.clear
+                                                )
+                                                .cornerRadius(6)
+                                                .onTapGesture {
+                                                    // When tapped, set the ID and load text for editing
+                                                    editingMessageId = message.id
+                                                    messageTextBeingEdited = message.text // Load current text
+                                                }
+                                                .id(message.id) // Assign ID for ScrollViewReader
+                                        }
+                                    }
+                                    //.padding(.vertical) // Add some padding inside ScrollView
+                                } // End ScrollView
+                                .onChange(of: conversationMessages.count) {
+                                    _,
+                                    _ in
+                                    if let lastMessageId = conversationMessages.last?.id {
+                                        withAnimation {
+                                            proxy.scrollTo(lastMessageId, anchor: .bottom) // Scroll to the last message
+
+                                        }
+                                    }
+                                }
+                            } // End ScrollViewReader
+                            .background(Color.white.opacity(inputBackgroundOpacity)) // Background for the list area
+                            .cornerRadius(12)
+                            .frame(minHeight: geo.size.height * (inputMode == .text ? 0.15 : 0.25), maxHeight: geo.size.height * (inputMode == .text ? 0.28 : 0.45))
+                            .sheet(isPresented: Binding<Bool>(
+                                get: { editingMessageId != nil },
+                                set: { if !$0 { editingMessageId = nil } }
+                            )) {
+                                // Pass necessary data/bindings to the EditMessageView
+                                if let messageBinding = editingMessageBinding {
+                                    EditMessageView(
+                                        message: messageBinding, // Pass the binding to the message
+                                        onSave: { updatedText in
+                                            // Find the message and update its text
+                                            if let index = conversationMessages.firstIndex(where: { $0.id == editingMessageId }) {
+                                                conversationMessages[index].text = updatedText
+                                            }
+                                            editingMessageId = nil // Dismiss sheet
+                                        },
+                                        onCancel: {
+                                            editingMessageId = nil // Dismiss sheet
+                                        }
+                                    )
+                                } else {
+                                     // Fallback view or handle error if binding is unexpectedly nil
+                                     Text("Error loading message for editing.")
+                                }
+                            }
                             //.shadow(color: .black.opacity(0.45), radius: 5, x: 4, y: 4)
 
 
-                            // Image Thumbnails Display
+                            /** // Image Thumbnails Display
                             if !conversationImages.isEmpty {
                                // ScrollView(.horizontal, showsIndicators: false) {
                                 VStack() {
@@ -135,53 +224,90 @@ struct ContextInputView: View {
                                     .padding(.leading) // Use leading padding to align with card edge
                                 }
                                 .frame(height: geo.size.height * 0.4)
-                             }
+                             }**/
                         }
+
+                        // --- Conditional Input Area (BELOW ScrollView's ZStack) ---
+                        if inputMode == .text {
+                             ManualTextInputView(
+                                 newMessageText: $newMessageText,
+                                 selectedSender: $selectedSender,
+                                 addMessageAction: addManualMessage
+                             )
+                             .padding(.horizontal, 10) // Padding for the input view itself
+                             // .padding(.bottom, 5) // Bottom padding might not be needed here
+                             .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        } else if !conversationImages.isEmpty { // Show thumbnails only in photo mode when images exist
+                            // Image Thumbnails Display (Existing Logic)
+                             HStack(spacing: 8) {
+                                 ForEach(conversationImages.indices, id: \.self) { index in
+                                     ImageThumbnailView(image: conversationImages[index]) {
+                                         removeImage(at: index)
+                                     }
+                                 }
+                                 Spacer()
+                             }
+                             .padding(.leading)
+                             .frame(height: 60) // Fixed height for thumbnails row
+                             .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        }
+                        // --- End Conditional Input Area ---
+
                         // Buttons Area (Clear, and Conditional Picker/Submit)
                         HStack {
                             // Clear Button (remains the same)
                             Button(action: clearConversation) { clearButtonStyle }
-                                .disabled(conversationText.isEmpty && conversationImages.isEmpty && selectedPhotos.isEmpty) // Also disable if picker selection is empty
+                                .disabled(
+                                    conversationMessages.isEmpty &&    // Check the message array
+                                    conversationImages.isEmpty &&    // Check loaded images (for photo mode)
+                                    selectedPhotos.isEmpty &&        // Check photo picker items (for photo mode)
+                                    newMessageText.isEmpty          // Check text input field (for text mode)
+                                    )
 
                             Spacer() // Pushes buttons apart
 
                             // --- Conditional Photo Button ---
-                            if conversationImages.isEmpty {
-                                // Show PhotosPicker if no images are loaded yet
-                                PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 5, matching: .images) {
-                                     photosPickerStyle // Use your existing helper
-                                 }
-                                .onChange(of: selectedPhotos) { _, newItems in
-                                    // Clear previous errors/success when new photos are chosen
-                                    photoSubmissionError = nil
-                                    photosSubmittedSuccessfully = false
-                                    loadSelectedImages(from: newItems)
-                                }
-                                .disabled(isSubmittingPhotos) // Disable while submitting photos
-
-                            } else {
-                                // Show Submit Photos Button if images are loaded
-                                Button(action: submitPhotosForOCR) {
-                                    HStack {
-                                        // Optionally show ProgressView when submitting photos
-                                        if isSubmittingPhotos {
-                                            ProgressView()
-                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                                .scaleEffect(0.8) // Smaller progress view
-                                        }
-                                        // Change icon/text based on state
-                                        Image(systemName: photosSubmittedSuccessfully ? "checkmark.circle.fill" : "arrow.up.doc.on.clipboard")
-                                        Text(photosSubmittedSuccessfully ? "Photos Sent" : (isSubmittingPhotos ? "Sending..." : "Send Photos"))
-                                            .font(.caption) // Smaller text
-                                            .lineLimit(1)
+                            if inputMode == .photos {
+                                if conversationImages.isEmpty {
+                                    // Show PhotosPicker if no images are loaded yet
+                                    PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 5, matching: .images) {
+                                        photosPickerStyle // Use your existing helper
                                     }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(Capsule().fill(photosSubmittedSuccessfully ? Color.green.opacity(0.7) : Color.accent1.opacity(0.8))) // Green on success
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
+                                    .onChange(of: selectedPhotos) { _, newItems in
+                                        // Clear previous errors/success when new photos are chosen
+                                        photoSubmissionError = nil
+                                        photosSubmittedSuccessfully = false
+                                        loadSelectedImages(from: newItems)
+                                    }
+                                    .disabled(isSubmittingPhotos) // Disable while submitting photos
+                                    .transition(.opacity)
+
+                                } else {
+                                    // Show Submit Photos Button if images are loaded
+                                    Button(action: submitPhotosForOCR) {
+                                        HStack {
+                                            // Optionally show ProgressView when submitting photos
+                                            if isSubmittingPhotos {
+                                                ProgressView()
+                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                    .scaleEffect(0.8) // Smaller progress view
+                                            }
+                                            // Change icon/text based on state
+                                            Image(systemName: photosSubmittedSuccessfully ? "checkmark.circle.fill" : "arrow.up.doc.on.clipboard")
+                                            Text(photosSubmittedSuccessfully ? "pics sent" : (isSubmittingPhotos ? "..." : "send pics"))
+                                                .font(.caption) // Smaller text
+                                                .lineLimit(1)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(Capsule().fill(photosSubmittedSuccessfully ? Color.green.opacity(0.7) : Color.accent1.opacity(0.8))) // Green on success
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1)
+                                    }
+                                    .disabled(isSubmittingPhotos || photosSubmittedSuccessfully) // Disable while submitting or if already successful
+                                    .transition(.opacity)
+
                                 }
-                                .disabled(isSubmittingPhotos || photosSubmittedSuccessfully) // Disable while submitting or if already successful
                             }
                             // --- End Conditional Photo Button ---
                         }
@@ -215,8 +341,12 @@ struct ContextInputView: View {
                                 lineWidth: 12
                             )
                             .cornerRadius(12)
-                    );
-
+                    )
+                    .animation(.easeInOut, value: inputMode) // Smooth transition for background opacity
+                    .animation(
+                        .easeInOut,
+                        value: conversationMessages.isEmpty
+                    ) // Smooth transition for message updates
                     Spacer()
 
 
@@ -274,6 +404,18 @@ struct ContextInputView: View {
     // Environment Objects are not available in previews, so we need to provide dummy values
     private func dummyFunction() {
         // This function is just a placeholder to avoid errors in previews
+    }
+
+    // MARK: - NEW: Action for Manual Text Input
+    private func addManualMessage() {
+        let trimmedText = newMessageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+
+        let newMessage = ConversationMessage(sender: selectedSender, text: trimmedText)
+        conversationMessages.append(newMessage)
+        newMessageText = "" // Clear input field
+        selectedSender = .user // Reset sender potentially
+        print("Added manual message: \(newMessage.text) from \(newMessage.sender.rawValue)")
     }
 
     // MARK: - Action for Photo OCR Submission
@@ -386,17 +528,28 @@ struct ContextInputView: View {
                 // self.conversationImages = []
                 // self.selectedPhotos = []
 
-                // TODO: Handle OCR results if the backend returns them in the response
-                /*
-                 if let responseData = data {
-                     // Try to decode OCR results (replace with your actual response model)
-                     // struct OcrResponse: Decodable { let results: [String]? }
-                     // if let decodedResponse = try? JSONDecoder().decode(OcrResponse.self, from: responseData) {
-                     //    print("Received OCR results: \(decodedResponse.results ?? [])")
-                     //    // Integrate results into conversationText or elsewhere?
-                     // }
-                 }
-                 */
+                if let responseData = data {
+                    do {
+                        // Decode the JSON response using the new structure
+                        let decodedResponse = try JSONDecoder().decode(OcrConversationResponse.self, from: responseData)
+
+                        // Update the conversationMessages state variable on the main thread
+                        // You might want to append or replace based on your logic
+                        self.conversationMessages.append(contentsOf: decodedResponse.messages)
+                        print("Successfully decoded OCR response with \(decodedResponse.messages.count) messages.")
+
+                        // **IMPORTANT**: Clear the old plain text editor content if needed
+                        self.conversationText = "" // Clear the old state variable
+
+                    } catch {
+                        // Handle potential JSON decoding errors
+                        print("OCR Error: Failed to decode conversation response: \(error)")
+                        self.photoSubmissionError = "Failed to process server response."
+                    }
+                } else {
+                    print("OCR Warning: No data received in the response, cannot extract messages.")
+                    // self.photoSubmissionError = "No message data received from server."
+                }
 
             }
         }.resume()
@@ -407,13 +560,27 @@ struct ContextInputView: View {
 
     private func clearConversation() {
         hideKeyboard()
-        conversationText = ""
-        selectedPhotos = [] // Clear picker selection
-        conversationImages.removeAll() // Clear loaded images
+        // Clear common states
+        conversationMessages.removeAll() // *** Clear the messages array ***
         topic = ""
         selectedSituation = ""
         showTopicError = false
         submissionError = nil
+
+        // Clear photo-specific states
+        selectedPhotos = []
+        conversationImages.removeAll()
+        photoSubmissionError = nil
+        photosSubmittedSuccessfully = false
+        isSubmittingPhotos = false
+
+        // Clear text-specific states
+        newMessageText = ""
+        selectedSender = .user
+
+        // Reset input mode if desired (optional)
+        // inputMode = .photos
+
         print("Context cleared.")
     }
 
@@ -502,7 +669,8 @@ struct ContextInputView: View {
 
         // 2. Prepare Payload (Add images later if needed)
         struct ContextPayload: Codable {
-            let conversation: String?
+//            let conversation: String?
+            let messages: [SimplifiedMessage]? // New way
             let situation: String?
             let topic: String?
             let userId: String?
@@ -511,12 +679,27 @@ struct ContextInputView: View {
         }
 
         let payload = ContextPayload(
-            conversation: conversationText.isEmpty ? nil : conversationText,
+            // messages: conversationMessages.isEmpty ? nil : conversationMessages, // Send the array
+            messages: conversationMessages.isEmpty ? nil : conversationMessages.map { SimplifiedMessage(sender: $0.sender.rawValue, text: $0.text) }, // Or simplified if needed
             situation: selectedSituation.isEmpty ? nil : selectedSituation,
-            topic: topic.isEmpty ? nil : topic, // Send validated topic
-            userId: userId,
+            topic: topic.isEmpty ? nil : topic,
+            userId: userId
             // images: encodeImagesIfNeeded(conversationImages) // Example function call
         )
+
+        // --- Example using Option 2 (Converting back to string) ---
+        /*
+        let conversationString = conversationMessages.map { "\($0.sender.rawValue): \($0.text)" }.joined(separator: "\n")
+        struct ContextPayload: Codable {
+            let conversation: String?
+            // ... other fields ...
+        }
+        let payload = ContextPayload(
+            conversation: conversationString.isEmpty ? nil : conversationString,
+            // ... other fields ...
+        )
+         */
+        // --- End Example ---
 
         // --- Replace with your actual backend URL ---
         guard let url = URL(string: "https://your.backend/api/generate") else { // (placeholder URL used)
@@ -526,6 +709,7 @@ struct ContextInputView: View {
         }
         // --- ---
 
+        // Encoder needs to handle ConversationMessage or SimplifiedMessage if using Option 1
         guard let encodedPayload = try? JSONEncoder().encode(payload) else {
             submissionError = "Failed to prepare data."
             print("Error: Failed to encode payload.")
@@ -629,6 +813,13 @@ struct ContextInputView: View {
           .padding(.top, 20)
           .disabled(isSubmitting)// || (conversationText.isEmpty && conversationImages.isEmpty))
       }
+
+    // MARK: - NEW Helper Struct for Simplified Submission (Optional)
+    // Use this if your backend expects simpler sender strings instead of the enum
+    struct SimplifiedMessage: Codable {
+        let sender: String // "User" or "Connection"
+        let text: String
+    }
 
 
 } // End Struct ContextInputView
