@@ -55,6 +55,7 @@ extension Image {
     private static let _spurlyBannerLogo = Image("SpurlyBannerBrandColor")
     private static let _menuIcon = Image("MenuIcon")
     private static let _addConnection = Image("AddConnectionIcon")
+    private static let _cancelAddConnectionIcon = Image("CancelAddConnectionIcon")
 
     static var tappableBgIcon: some View {
         _spurlyBackgroundIcon
@@ -86,6 +87,18 @@ extension Image {
 
     static var connectionIcon: some View {
         _addConnection
+            .font(.title2)
+            .foregroundColor(.primaryText)
+            .shadow(
+                color: .primaryText.opacity(0.5),
+                radius: 5,
+                x: 3,
+                y: 3
+            )
+    }
+
+    static var cancelAddConnectionIcon: some View {
+        _cancelAddConnectionIcon
             .imageScale(.large)
             .font(.title2)
             .foregroundColor(.primaryText)

@@ -10,13 +10,13 @@ import SwiftUI
 /// Manages presentation of New Connection across the app
 final class ConnectionManager: ObservableObject {
     /// `true` when the menu is visible
-    @Published private(set) var isNewConnectionOpen: Bool = false
+    @Published var isNewConnectionOpen: Bool = false
 
     /// Opens the New Connection UI (can wrap in animation)
     func addNewConnection() {
         print("Add New Connection not implemented yet")
 //        withAnimation {
-//            isNewConnectionOpen = true
+            isNewConnectionOpen = true
 //        }
     }
 
@@ -24,7 +24,7 @@ final class ConnectionManager: ObservableObject {
     func closeNewConnection() {
         print("Close New Connection not implemented yet")
 //        withAnimation {
-//            isNewConnectionOpen = false
+            isNewConnectionOpen = false
 //        }
     }
 

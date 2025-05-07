@@ -76,16 +76,16 @@ struct ContextInputView: View {
             ZStack {
                 Color.tappablePrimaryBg
                     .zIndex(0) // Background color layer
-
+                
                 Image.tappableBgIcon
                     .frame(width: screenWidth * 1.5, height: screenHeight * 1.5)
                     .position(x: screenWidth / 2, y: screenHeight * 0.43)
                     .allowsHitTesting(false) // Make sure it doesn't block taps
                     .zIndex(1) // Above background color
-
+                
                 // Main content VStack layer
                 VStack(spacing: 2) { // Reduced overall spacing slightly
-
+                    
                     // Header Row (Menu, Banner, Plus Button aligned horizontally)
                     HStack {
                         // Menu Button
@@ -95,40 +95,42 @@ struct ContextInputView: View {
                             Image.menuIcon
                                 .frame(width: 44, height: 44) // Ensure tappable area
                         }
-
+                        
                         Spacer() // Pushes banner to center
-
-
+                        
+                        
                         // Plus Button
                         Button(
-                            action: dummyFunction // MARK: Replace with connectionManager.addNewConnection
+                            action: {
+                                connectionManager.addNewConnection()
+                            } // MARK: Replace with connectionManager.addNewConnection
                         ) {
                             Image.connectionIcon
                                 .frame(width: 44, height: 44) // Ensure tappable area
                         }
                     }.padding(.horizontal)
-
+                    
                     // Banner Image (within the HStack now)
                     Image.bannerLogo
                         .frame(height: screenHeight * 0.1) // Adjust height to fit line
                         .padding(.horizontal)
-                        // Minimal top padding, just safe area
-                        //.padding(.top, geo.safeAreaInsets.top > 0 ? geo.safeAreaInsets.top : 8) // Add small padding if no safe area
-
-
+                    // Minimal top padding, just safe area
+                    //.padding(.top, geo.safeAreaInsets.top > 0 ? geo.safeAreaInsets.top : 8) // Add small padding if no safe area
+                    
+                    
                     // Subtitle Text (Moved below header HStack)
                     Text.bannerTag
                         .padding(.bottom, 15) // Add slight padding below subtitle
-
+                    
                     Spacer() // Pushes content down
-                    // Conversation Input Card with Opacity
-
+                             // Conversation Input Card with Opacity
+                    
                     VStack(spacing: 8) {
                         // --- NEW: Input Mode Picker ---
                         Picker("Input Mode", selection: $inputMode) {
                             ForEach(ContextInputMode.allCases) { mode in
                                 Text(mode.rawValue).tag(mode)
-                                    //.font(.caption)
+                                //.font(.caption)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -145,7 +147,7 @@ struct ContextInputView: View {
                             photoSubmissionError = nil  // Clear photo errors
                             photosSubmittedSuccessfully = false // Reset photo success state
                         }
-
+                        
                         ZStack {
                             ScrollViewReader { proxy in // Optional: Allows scrolling to specific messages
                                 ScrollView {
@@ -173,7 +175,7 @@ struct ContextInputView: View {
                                     if let lastMessageId = conversationMessages.last?.id {
                                         withAnimation {
                                             proxy.scrollTo(lastMessageId, anchor: .bottom) // Scroll to the last message
-
+                                            
                                         }
                                     }
                                 }
@@ -201,58 +203,58 @@ struct ContextInputView: View {
                                         }
                                     )
                                 } else {
-                                     // Fallback view or handle error if binding is unexpectedly nil
-                                     Text("Error loading message for editing.")
+                                    // Fallback view or handle error if binding is unexpectedly nil
+                                    Text("Error loading message for editing.")
                                 }
                             }
                             //.shadow(color: .black.opacity(0.45), radius: 5, x: 4, y: 4)
-
-
+                            
+                            
                             /** // Image Thumbnails Display
-                            if !conversationImages.isEmpty {
-                               // ScrollView(.horizontal, showsIndicators: false) {
-                                VStack() {
-                                    Spacer()
-                                    HStack(spacing: 8) {
-                                        ForEach(conversationImages.indices, id: \.self) { index in
-                                            ImageThumbnailView(image: conversationImages[index]) {
-                                                removeImage(at: index)
-                                            }
-                                        }
-                                        Spacer()
-                                    }
-                                    .padding(.leading) // Use leading padding to align with card edge
-                                }
-                                .frame(height: geo.size.height * 0.4)
+                             if !conversationImages.isEmpty {
+                             // ScrollView(.horizontal, showsIndicators: false) {
+                             VStack() {
+                             Spacer()
+                             HStack(spacing: 8) {
+                             ForEach(conversationImages.indices, id: \.self) { index in
+                             ImageThumbnailView(image: conversationImages[index]) {
+                             removeImage(at: index)
+                             }
+                             }
+                             Spacer()
+                             }
+                             .padding(.leading) // Use leading padding to align with card edge
+                             }
+                             .frame(height: geo.size.height * 0.4)
                              }**/
                         }
-
+                        
                         // --- Conditional Input Area (BELOW ScrollView's ZStack) ---
                         if inputMode == .text {
-                             ManualTextInputView(
-                                 newMessageText: $newMessageText,
-                                 selectedSender: $selectedSender,
-                                 addMessageAction: addManualMessage
-                             )
-                             .padding(.horizontal, 10) // Padding for the input view itself
-                             // .padding(.bottom, 5) // Bottom padding might not be needed here
-                             .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            ManualTextInputView(
+                                newMessageText: $newMessageText,
+                                selectedSender: $selectedSender,
+                                addMessageAction: addManualMessage
+                            )
+                            .padding(.horizontal, 10) // Padding for the input view itself
+                                                      // .padding(.bottom, 5) // Bottom padding might not be needed here
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                         } else if !conversationImages.isEmpty { // Show thumbnails only in photo mode when images exist
-                            // Image Thumbnails Display (Existing Logic)
-                             HStack(spacing: 8) {
-                                 ForEach(conversationImages.indices, id: \.self) { index in
-                                     ImageThumbnailView(image: conversationImages[index]) {
-                                         removeImage(at: index)
-                                     }
-                                 }
-                                 Spacer()
-                             }
-                             .padding(.leading)
-                             .frame(height: 60) // Fixed height for thumbnails row
-                             .transition(.opacity.combined(with: .move(edge: .bottom)))
+                                                                // Image Thumbnails Display (Existing Logic)
+                            HStack(spacing: 8) {
+                                ForEach(conversationImages.indices, id: \.self) { index in
+                                    ImageThumbnailView(image: conversationImages[index]) {
+                                        removeImage(at: index)
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(.leading)
+                            .frame(height: 60) // Fixed height for thumbnails row
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
                         // --- End Conditional Input Area ---
-
+                        
                         // Buttons Area (Clear, and Conditional Picker/Submit)
                         HStack {
                             // Clear Button (remains the same)
@@ -262,10 +264,10 @@ struct ContextInputView: View {
                                     conversationImages.isEmpty &&    // Check loaded images (for photo mode)
                                     selectedPhotos.isEmpty &&        // Check photo picker items (for photo mode)
                                     newMessageText.isEmpty          // Check text input field (for text mode)
-                                    )
-
+                                )
+                            
                             Spacer() // Pushes buttons apart
-
+                            
                             // --- Conditional Photo Button ---
                             if inputMode == .photos {
                                 if conversationImages.isEmpty {
@@ -281,7 +283,7 @@ struct ContextInputView: View {
                                     }
                                     .disabled(isSubmittingPhotos) // Disable while submitting photos
                                     .transition(.opacity)
-
+                                    
                                 } else {
                                     // Show Submit Photos Button if images are loaded
                                     Button(action: submitPhotosForOCR) {
@@ -306,7 +308,7 @@ struct ContextInputView: View {
                                     }
                                     .disabled(isSubmittingPhotos || photosSubmittedSuccessfully) // Disable while submitting or if already successful
                                     .transition(.opacity)
-
+                                    
                                 }
                             }
                             // --- End Conditional Photo Button ---
@@ -315,12 +317,12 @@ struct ContextInputView: View {
                         .padding(.bottom, 10)
                         // Optional: Display photo submission errors nearby
                         if let photoError = photoSubmissionError {
-                             Text("Photo Error: \(photoError)")
-                                 .font(.caption)
-                                 .foregroundColor(.red)
-                                 .padding(.horizontal, 15)
-                                 .padding(.bottom, 5) // Adjust positioning as needed
-                         }
+                            Text("Photo Error: \(photoError)")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 15)
+                                .padding(.bottom, 5) // Adjust positioning as needed
+                        }
                     } // End ZStack for TextEditor overlay
                     .frame(width: geo.size.width * 0.89, height: geo.size.height * 0.5) // Reduced width to fit card
                     .background(Color.cardBg) // Use defined color
@@ -348,8 +350,8 @@ struct ContextInputView: View {
                         value: conversationMessages.isEmpty
                     ) // Smooth transition for message updates
                     Spacer()
-
-
+                    
+                    
                     // Situation/Topic + Generate Button Row with Opacity
                     HStack(alignment: .top, spacing: 8) {
                         // Situation Picker & Topic Field Container
@@ -364,40 +366,47 @@ struct ContextInputView: View {
                             )      // Use helper view
                         }
                         .frame(width: geo.size.width * 0.55) // Keep reduced width
-
+                        
                         Spacer() // Pushes button to the right edge
-
+                        
                         // Generate Spurs Image Button
                         spurGenerationButton // Use helper view
-
+                        
                     } // End HStack for Situation/Topic + Button
                     .padding(.horizontal) // Overall padding for the row
                     .padding(.top, 10) // Add top padding for spacing
-                    // Display General Submission Error Message
+                                       // Display General Submission Error Message
                     SubmissionErrorView (
                         submissionError: $submissionError
                     ) // Use helper view
-
+                    
                     Spacer(minLength: 25) // Pushes footer down
-
+                    
                     // Footer Text and Link
                     footerView // Use helper view
-                    .padding(.bottom, geo.safeAreaInsets.bottom > 0 ? 5 : 15) // Adjust padding based on safe area
-                    .frame(maxWidth: .infinity)
-
+                        .padding(.bottom, geo.safeAreaInsets.bottom > 0 ? 5 : 15) // Adjust padding based on safe area
+                        .frame(maxWidth: .infinity)
+                    
                 } // Main content VStack
                 .zIndex(2) // Above background elements
-
+                
             } // ZStack Container
-            .onTapGesture { hideKeyboard() } // Dismiss keyboard on background tap
-            .navigationDestination(isPresented: $navigateToSuggestions) {
-                 // Replace with your actual Suggestions View
-                 // SuggestionsView(spurs: generatedSpurs) // Example
-                 Text("Suggestions View Placeholder") // Placeholder
+              //.onTapGesture { hideKeyboard() } // Dismiss keyboard on background tap
+            .sheet(isPresented: $connectionManager.isNewConnectionOpen) { // Binding to the manager's state
+                AddConnectionView()
+                //.navigationDestination(isPresented: $navigateToSuggestions) {
+                // Replace with your actual Suggestions View
+                // SuggestionsView(spurs: generatedSpurs) // Example
+                //      Text("Suggestions View Placeholder") // Placeholder
+                //}
+                    .environmentObject(authManager)
+                    .environmentObject(connectionManager)
+                
             }
-            .navigationBarHidden(true) // Keep navigation bar hidden if desired
-            .ignoresSafeArea(.keyboard) // Keep content visible when keyboard appears
+            
         } // GeometryReader
+        .navigationBarHidden(true) // Keep navigation bar hidden if desired
+        .ignoresSafeArea(.keyboard) // Keep content visible when keyboard appears
     }
 
     // MARK: – DUMMY FUNCTION
@@ -835,7 +844,8 @@ struct ContextInputView_Previews: PreviewProvider {
         NavigationView {
             // Remove initializer arguments and inject a dummy AuthManager environment object
             ContextInputView()
-                .environmentObject(AuthManager(userId: "previewUser123", token: "previewTokenAbc")) // Add this
+                .environmentObject(ConnectionManager())
+                .environmentObject(AuthManager(userId: "previewUser", token: "previewToken"))
         }
     }
 }
