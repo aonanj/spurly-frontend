@@ -9,24 +9,32 @@
 import SwiftUI
 
 struct AddConnectionCardView<Content: View>: View {
-    let title: String; let icon: Image; let content: Content
+    let addConnectionCardTitle: String;
+    let addConnectionCardIcon: Image;
+    let addConnectionCardContent: Content
     private let cardBackgroundColor = Color.spurlyCardBackground; private let cardOpacity: Double = 0.92
     private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
-    init(title: String, icon: Image, @ViewBuilder content: () -> Content) { self.title = title; self.icon = icon; self.content = content() }
+    init(
+        title: String,
+        icon: Image,
+        @ViewBuilder addConnectionCardContent: () -> Content
+    ) {
+        self.addConnectionCardTitle = title; self.addConnectionCardIcon = icon; self.addConnectionCardContent = addConnectionCardContent()
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .center, spacing: 10) {
                 Spacer()
                 HStack(alignment: .center, spacing: 5) {
-                    icon
+                    addConnectionCardIcon
                         .resizable()
                         .scaledToFit()
                         .frame(width: 24, height: 24)
                         .foregroundColor(.spurlyPrimaryText)
-                    Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
+                    Text(addConnectionCardTitle).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
 
                 }
-                content.padding(.horizontal).opacity(1).padding(.vertical);
+                addConnectionCardContent.padding(.horizontal).opacity(1).padding(.vertical);
                 Spacer()
             }
             .frame(maxWidth: .infinity)
@@ -54,13 +62,13 @@ struct AddConnectionCardView<Content: View>: View {
 }
 
 struct AddConnectionBasicsCardContent: View {
-    @Binding var name: String
-    @Binding var age: Int?
-    @Binding var gender: String
-    @Binding var pronouns: String
-    @Binding var ethnicity: String
-    @Binding var showAgeError: Bool
-    @FocusState private var fieldIsFocused: Bool
+    @Binding var connectionName: String
+    @Binding var connectionAge: Int?
+    @Binding var connectionGender: String
+    @Binding var connectionPronouns: String
+    @Binding var connectionEthnicity: String
+    @Binding var connectionShowAgeError: Bool
+    @FocusState private var connectionFieldIsFocused: Bool
     let genderOptions = ["", "male", "female", "non-binary", "other"]
     let pronounOptions = ["", "he/him", "she/her", "they/them", "other"]
     let ethnicityOptions = ["", "american indian/alaska native", "asian", "black/african american", "hispanic/Latino", "aanhpi", "white", "middle eastern/north african", "multiracial", "other"]
@@ -68,25 +76,25 @@ struct AddConnectionBasicsCardContent: View {
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("name").font(labelFont).foregroundColor(.spurlySecondaryText)
-            TextField("...", text: $name)
+            Text("their name").font(labelFont).foregroundColor(.spurlySecondaryText)
+            TextField("...", text: $connectionName)
                 .textFieldStyle(CustomTextFieldStyle())
                 .textContentType(.name)
-                .focused($fieldIsFocused)
-                .limitInputLength(for: $name)
-                .onSubmit { fieldIsFocused = false }
+                .focused($connectionFieldIsFocused)
+                .limitInputLength(for: $connectionName)
+                .onSubmit { connectionFieldIsFocused = false }
             Spacer().frame(height: 8)
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("age").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "age", selection: $age, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" })
+                    Text("their age").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "connectionAge", selection: $connectionAge, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" })
                         .opacity(1)
                         .frame(height: 44)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.red, lineWidth: (showAgeError && !(age ?? 0 >= 18)) ? 2 : 0)
+                                .stroke(Color.red, lineWidth: (connectionShowAgeError && !(connectionAge ?? 0 >= 18)) ? 2 : 0)
                         )
-                    if showAgeError && !(age ?? 0 >= 18) {
+                    if connectionShowAgeError && !(connectionAge ?? 0 >= 18) {
                         Text("connection must be 18")
                             .font(.caption)
                             .foregroundColor(.red)
@@ -94,19 +102,19 @@ struct AddConnectionBasicsCardContent: View {
                 }
                 .alignmentGuide(.top) { d in d[.top] }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("gender").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "gender", selection: $gender, options: genderOptions, textMapping: { $0 }).frame(height: 44)
+                    Text("their gender").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "connectionGender", selection: $connectionGender, options: genderOptions, textMapping: { $0 }).frame(height: 44)
                 }.alignmentGuide(.top) { d in d[.top] }
             }
             Spacer().frame(height: 8)
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("pronouns").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "pronouns", selection: $pronouns, options: pronounOptions, textMapping: { $0 }).frame(height: 44)
+                    Text("their pronouns").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "connectionPronouns", selection: $connectionPronouns, options: pronounOptions, textMapping: { $0 }).frame(height: 44)
                 }
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "ethnicity", selection: $ethnicity, options: ethnicityOptions, textMapping: { $0 }).frame(height: 44)
+                    Text("their ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText)
+                    CustomPickerStyle(title: "connectionEthnicity", selection: $connectionEthnicity, options: ethnicityOptions, textMapping: { $0 }).frame(height: 44)
                 }
             }
             Spacer().frame(height: 8)
@@ -114,81 +122,94 @@ struct AddConnectionBasicsCardContent: View {
     }
 }
 struct AddConnectionBackgroundCardContent: View {
-    @FocusState private var isCityFieldFocused: Bool; @FocusState private var isWorkFieldFocused: Bool; @FocusState private var isSchoolFieldFocused: Bool; @FocusState private var isHometownFieldFocused: Bool
-    @Binding var currentCity: String; @Binding var job: String; @Binding var school: String; @Binding var hometown: String
+    @FocusState private var connectionIsCityFieldFocused: Bool;
+    @FocusState private var connectionIsWorkFieldFocused: Bool;
+    @FocusState private var connectionIsSchoolFieldFocused: Bool;
+    @FocusState private var connectionIsHometownFieldFocused: Bool
+    @Binding var connectionCurrentCity: String;
+    @Binding var connectionJob: String;
+    @Binding var connectionSchool: String;
+    @Binding var connectionHometown: String
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("current city")
+            Text("their city")
                 .font(labelFont)
                 .foregroundColor(.spurlySecondaryText); TextField(
                     "...",
-                    text: $currentCity
+                    text: $connectionCurrentCity
                 )
                 .textFieldStyle(CustomTextFieldStyle())
                 .textContentType(.addressCity)
-                .limitInputLength(for: $currentCity); Spacer()
+                .limitInputLength(for: $connectionCurrentCity); Spacer()
                 .frame(height: 4)
-                .focused($isCityFieldFocused).onSubmit { isCityFieldFocused = false }
-            Text("work")
+                .focused($connectionIsCityFieldFocused).onSubmit { connectionIsCityFieldFocused = false }
+            Text("their job")
                 .font(labelFont)
                 .foregroundColor(.spurlySecondaryText); TextField(
                     "...",
-                    text: $job
+                    text: $connectionJob
                 )
                 .textFieldStyle(CustomTextFieldStyle())
                 .textContentType(.jobTitle)
-                .limitInputLength(for: $job); Spacer()
+                .limitInputLength(for: $connectionJob); Spacer()
                 .frame(height: 4)
-                .focused($isWorkFieldFocused).onSubmit { isWorkFieldFocused = false }
-            Text("school")
+                .focused($connectionIsWorkFieldFocused).onSubmit { connectionIsWorkFieldFocused = false }
+            Text("their school")
                 .font(labelFont)
                 .foregroundColor(.spurlySecondaryText); TextField(
                     "...",
-                    text: $school
+                    text: $connectionSchool
                 )
                 .textFieldStyle(CustomTextFieldStyle())
                 .textContentType(.organizationName)
-                .limitInputLength(for: $school); Spacer()
+                .limitInputLength(for: $connectionSchool); Spacer()
                 .frame(height: 4)
-                .focused($isSchoolFieldFocused).onSubmit { isSchoolFieldFocused = false }
-            Text("hometown")
+                .focused($connectionIsSchoolFieldFocused).onSubmit { connectionIsSchoolFieldFocused = false }
+            Text("their hometown")
                 .font(labelFont)
                 .foregroundColor(.spurlySecondaryText); TextField(
                     "...",
-                    text: $hometown
+                    text: $connectionHometown
                 )
                 .textFieldStyle(CustomTextFieldStyle())
                 .textContentType(.addressCity)
-                .limitInputLength(for: $hometown)
-                .focused($isHometownFieldFocused).onSubmit { isHometownFieldFocused = false }
+                .limitInputLength(for: $connectionHometown)
+                .focused($connectionIsHometownFieldFocused).onSubmit { connectionIsHometownFieldFocused = false }
         }
     }
 }
 struct AddConnectionAboutCardContent: View {
-    @Binding var greenlights: [String]; @Binding var redlights: [String]; @Binding var allTopics: [String]
+    @Binding var connectionGreenlights: [String];
+    @Binding var connectionRedlights: [String];
+    @Binding var allTopics: [String]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            TopicInputField(label: "likes", topics: $greenlights, exclude: redlights, allTopics: allTopics, isGreen: true)
-            TopicInputField(label: "dislikes", topics: $redlights, exclude: greenlights, allTopics: allTopics, isGreen: false)
+            TopicInputField(label: "their likes", topics: $connectionGreenlights, exclude: connectionRedlights, allTopics: allTopics, isGreen: true)
+            TopicInputField(label: "their dislikes", topics: $connectionRedlights, exclude: connectionGreenlights, allTopics: allTopics, isGreen: false)
         }
     }
 }
 struct AddConnectionLifestyleCardContent: View {
-    @Binding var drinking: String; @Binding var datingPlatform: String; @Binding var lookingFor: String; @Binding var kids: String
-    let drinkingOptions = ["", "often", "socially", "rarely", "never"]; let datingPlatformOptions = ["", "tinder", "bumble", "hinge", "raya", "plenty of fish", "match.com", "okcupid", "instagram", "feeld", "grindr", "other"]
-    let lookingForOptions = ["", "casual", "short term", "long term", "marriage", "enm", "not sure"]; let kidsOptions = ["", "want", "don't want", "have kids", "have kids, want more", "not sure"]
+    @Binding var connectionDrinking: String;
+    @Binding var connectionDatingPlatform: String;
+    @Binding var connectionLookingFor: String;
+    @Binding var connectionKids: String
+    let drinkingOptions = ["", "often", "socially", "rarely", "never"];
+    let datingPlatformOptions = ["", "tinder", "bumble", "hinge", "raya", "plenty of fish", "match.com", "okcupid", "instagram", "feeld", "grindr", "other"]
+    let lookingForOptions = ["", "casual", "short term", "long term", "marriage", "enm", "not sure"];
+    let kidsOptions = ["", "want", "don't want", "have kids", "have kids, want more", "not sure"]
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "drinking habits", selection: $drinking, options: drinkingOptions, textMapping: { $0 }).frame(height: 44) }
-                VStack(alignment: .leading, spacing: 8) { Text("dating app").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "dating platform", selection: $datingPlatform, options: datingPlatformOptions, textMapping: { $0 }).frame(height: 44) }
+                VStack(alignment: .leading, spacing: 8) { Text("their drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "connectionDrinking", selection: $connectionDrinking, options: drinkingOptions, textMapping: { $0 }).frame(height: 44) }
+                VStack(alignment: .leading, spacing: 8) { Text("their dating app").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "connectionDatingPlatform", selection: $connectionDatingPlatform, options: datingPlatformOptions, textMapping: { $0 }).frame(height: 44) }
             }; Spacer().frame(height: 4)
             HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("looking for").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "looking for", selection: $lookingFor, options: lookingForOptions, textMapping: { $0 }).frame(height: 44) }
-                VStack(alignment: .leading, spacing: 8) { Text("kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "kids", selection: $kids, options: kidsOptions, textMapping: { $0 }).frame(height: 44) }
+                VStack(alignment: .leading, spacing: 8) { Text("they're looking for").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "looking for", selection: $connectionLookingFor, options: lookingForOptions, textMapping: { $0 }).frame(height: 44) }
+                VStack(alignment: .leading, spacing: 8) { Text("their kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "kids", selection: $connectionKids, options: kidsOptions, textMapping: { $0 }).frame(height: 44) }
             }; Spacer().frame(height: 8)
         }.padding(.top, 24).padding(.bottom, 20)
     }

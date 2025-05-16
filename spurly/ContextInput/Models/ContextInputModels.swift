@@ -207,4 +207,6 @@ struct ManualTextInputView: View {
     }
 }
 
-
+struct BackendSpursResponse: Decodable {
+    let spurs: [String]? //adjust to match backend key
+}

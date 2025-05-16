@@ -11,10 +11,12 @@ import SwiftUI
 final class ConnectionManager: ObservableObject {
     /// `true` when the menu is visible
     @Published var isNewConnectionOpen: Bool = false
+    @Published var currentConnectionId: String? = nil
+    @Published var currentConnectionName: String? = nil
 
     /// Opens the New Connection UI (can wrap in animation)
     func addNewConnection() {
-        print("Add New Connection not implemented yet")
+        print("Add New Connection tapped")
 //        withAnimation {
             isNewConnectionOpen = true
 //        }
@@ -22,7 +24,7 @@ final class ConnectionManager: ObservableObject {
 
     /// Closes the New Connection UI
     func closeNewConnection() {
-        print("Close New Connection not implemented yet")
+        print("Close New Connection tapped")
 //        withAnimation {
             isNewConnectionOpen = false
 //        }
@@ -30,9 +32,27 @@ final class ConnectionManager: ObservableObject {
 
     /// Toggles the New Connection UI
     func toggleNewConnection() {
-        print("Toggle New Connection not implemented yet")
+        print("Toggle New Connection tapped")
 //        withAnimation {
-//            isNewConnectionOpen.toggle()
+            isNewConnectionOpen.toggle()
 //        }
+    }
+
+    func setActiveConnection(connectionId: String, connectionName: String) {
+        DispatchQueue.main.async {
+            self.currentConnectionId = connectionId
+            self.currentConnectionName = connectionName
+            print(
+                "ConnectionManager: Active connection ID set to: \(connectionId)."
+            )
+        }
+    }
+
+    func clearActiveConnection()  {
+        DispatchQueue.main.async {
+            self.currentConnectionId = nil
+            self.currentConnectionName = nil
+            print("ConnectionManager: Active connection ID cleared.")
+        }
     }
 }

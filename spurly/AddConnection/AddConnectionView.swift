@@ -15,33 +15,33 @@ struct AddConnectionView: View {
     let totalCards = 4 // Same number of cards as onboarding
 
     // MARK: - Connection Data State
-    @State private var name = ""
-    @State private var age: Int? = nil
-    @State private var gender = ""
-    @State private var pronouns = ""
-    @State private var ethnicity = ""
-    @State private var showAgeError = false
+    @State private var connectionName = ""
+    @State private var connectionAge: Int? = nil
+    @State private var connectionGender = ""
+    @State private var connectionPronouns = ""
+    @State private var connectionEthnicity = ""
+    @State private var connectionShowAgeError = false
 
-    @State private var currentCity = ""
-    @State private var hometown = ""
-    @State private var school = ""
-    @State private var job = ""
+    @State private var connectionCurrentCity = ""
+    @State private var connectionHometown = ""
+    @State private var connectionSchool = ""
+    @State private var connectionJob = ""
 
-    @State private var greenlights: [String] = []
-    @State private var redlights: [String] = []
+    @State private var connectionGreenlights: [String] = []
+    @State private var connectionRedlights: [String] = []
     @State private var allTopics: [String] = presetTopics
 
-    @State private var drinking = ""
-    @State private var datingPlatform = ""
-    @State private var lookingFor = ""
-    @State private var kids = ""
+    @State private var connectionDrinking = ""
+    @State private var connectionDatingPlatform = ""
+    @State private var connectionLookingFor = ""
+    @State private var connectionKids = ""
 
 
 
     // Submission State
-    @State private var isSaving = false // Used for ProgressView during save
-    @State private var saveError: String? = nil // Holds the error message string
-    @State private var showErrorOverlay = false // Controls visibility of the error overlay
+    @State private var connectionIsSaving = false // Used for ProgressView during save
+    @State private var connectionSaveError: String? = nil // Holds the error message string
+    @State private var connectionShowErrorOverlay = false // Controls visibility of the error overlay
 
     // MARK: - Computed Properties
     var progress: Double {
@@ -53,7 +53,7 @@ struct AddConnectionView: View {
     var canProceedToNextCard: Bool {
         if currentCardIndex == 0 { // Basics Card
             // Age must be selected (not nil) AND be >= 18 to proceed from the first card
-            return (age != nil && age ?? 0 >= 18)
+            return (connectionAge != nil && connectionAge ?? 0 >= 18)
         }
         return true // Allow proceeding from other cards freely
     }
@@ -61,8 +61,8 @@ struct AddConnectionView: View {
     // REVISED: Validation for final save action
     var canSaveChanges: Bool {
         // Age must be selected (not nil) AND be >= 18 for saving, plus name must be present.
-        let ageIsValid = (age != nil && age ?? 0 >= 18)
-        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && ageIsValid
+        let connectionAgeIsValid = (connectionAge != nil && connectionAge ?? 0 >= 18)
+        return !connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && connectionAgeIsValid
     }
 
     // Computed property to determine if the Next/Save button should *appear* disabled and act accordingly
@@ -90,7 +90,7 @@ struct AddConnectionView: View {
 
                 Image.tappableBgIcon
                     .frame(width: screenWidth * 1.5, height: screenHeight * 1.5)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.5) // Mirrored position
+                    .position(x: screenWidth / 2, y: screenHeight * 0.52) // Mirrored position
                     .allowsHitTesting(false)
 
                 // Main Content VStack
@@ -172,10 +172,10 @@ struct AddConnectionView: View {
                                 // or a more specific skip validation if needed.
                                 if currentCardIndex < totalCards - 1 {
                                     if canProceedToNextCard {
-                                        showAgeError = false
+                                        connectionShowAgeError = false
                                         withAnimation { currentCardIndex += 1 }
                                     } else if currentCardIndex == 0 { // Special case for age error on first card
-                                        showAgeError = true
+                                        connectionShowAgeError = true
                                     }
                                 }
                                 // If on the last card, "skip ahead" might not make sense,
@@ -207,21 +207,21 @@ struct AddConnectionView: View {
                                     icon: Image(.addConnectionBasicsIcon)
                                 ) {
                                     AddConnectionBasicsCardContent(
-                                        name: $name,
-                                        age: $age,
-                                        gender: $gender,
-                                        pronouns: $pronouns,
-                                        ethnicity: $ethnicity,
-                                        showAgeError: $showAgeError
+                                        connectionName: $connectionName,
+                                        connectionAge: $connectionAge,
+                                        connectionGender: $connectionGender,
+                                        connectionPronouns: $connectionPronouns,
+                                        connectionEthnicity: $connectionEthnicity,
+                                        connectionShowAgeError: $connectionShowAgeError
                                     )
                                 }
                             case 1:
                                 AddConnectionCardView(title: "connection background", icon: Image(.addConnectionBackgroundIcon)) {
                                     AddConnectionBackgroundCardContent(
-                                        currentCity: $currentCity,
-                                        job: $job,
-                                        school: $school,
-                                        hometown: $hometown
+                                        connectionCurrentCity: $connectionCurrentCity,
+                                        connectionJob: $connectionJob,
+                                        connectionSchool: $connectionSchool,
+                                        connectionHometown: $connectionHometown
                                     )
                                 }
                             case 2:
@@ -230,18 +230,18 @@ struct AddConnectionView: View {
                                     icon: Image(.addConnectionAboutIcon)
                                 ) {
                                     AddConnectionAboutCardContent(
-                                        greenlights: $greenlights,
-                                        redlights: $redlights,
+                                        connectionGreenlights: $connectionGreenlights,
+                                        connectionRedlights: $connectionRedlights,
                                         allTopics: $allTopics
                                     )
                                 }
                             case 3:
                                 AddConnectionCardView(title: "connection lifestyle", icon: Image(.addConnectionLifestyleIcon)) {
                                     AddConnectionLifestyleCardContent(
-                                        drinking: $drinking,
-                                        datingPlatform: $datingPlatform, // Consider if needed
-                                        lookingFor: $lookingFor,       // Consider if needed
-                                        kids: $kids
+                                        connectionDrinking: $connectionDrinking,
+                                        connectionDatingPlatform: $connectionDatingPlatform, // Consider if needed
+                                        connectionLookingFor: $connectionLookingFor,       // Consider if needed
+                                        connectionKids: $connectionKids
                                     )
                                 }
                             default:
@@ -280,34 +280,34 @@ struct AddConnectionView: View {
                                 if currentCardIndex == 0 {
                                     // If on Basics Card and "Next" action is blocked, it's due to age being nil
                                     // (since the picker prevents selecting < 18, and canProceedToNextCard requires non-nil valid age).
-                                    showAgeError = true // This will make BasicsCardContent show the error text
+                                    connectionShowAgeError = true // This will make BasicsCardContent show the error text
                                 } else if currentCardIndex == totalCards - 1 {
                                     // If on the last card and "Save" action is blocked:
                                     // Determine specific save error for the overlay.
-                                    if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        saveError = "Connection name cannot be empty."
+                                    if connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        connectionSaveError = "Connection name cannot be empty."
                                         // If age is ALSO an issue (e.g., nil), ensure BasicsCardContent can show its error.
-                                        if !(age != nil && age ?? 0 >= 18) { // Checks if age is nil or <18
-                                            showAgeError = true
+                                        if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Checks if age is nil or <18
+                                            connectionShowAgeError = true
                                         }
-                                    } else if !(age != nil && age ?? 0 >= 18) { // Name is fine, but age is nil (or <18 if somehow set).
-                                        showAgeError = true // Essential for BasicsCardContent's inline error
-                                        saveError = "Age must be selected and be 18 or older."
+                                    } else if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Name is fine, but age is nil (or <18 if somehow set).
+                                        connectionShowAgeError = true // Essential for BasicsCardContent's inline error
+                                        connectionSaveError = "Age must be selected and be 18 or older."
                                         // Optionally, navigate back to the card with the age error:
                                         // if currentCardIndex != 0 { // Only if not already on the basics card
                                         //     withAnimation { currentCardIndex = 0 }
                                         // }
                                     } else {
-                                        saveError = "Please ensure all required fields are valid and try again."
+                                        connectionSaveError = "Please ensure all required fields are valid and try again."
                                     }
-                                    showErrorOverlay = true // Show the general error overlay
+                                    connectionShowErrorOverlay = true // Show the general error overlay
                                 }
                                 // Add more conditions here if other cards have blocking validation
                             } else {
                                 // --- ACTION IS PERMITTED ---
-                                showAgeError = false // Clear age field error as we are proceeding/saving
-                                saveError = nil      // Clear general save error message
-                                showErrorOverlay = false // Hide general error overlay
+                                connectionShowAgeError = false // Clear age field error as we are proceeding/saving
+                                connectionSaveError = nil      // Clear general save error message
+                                connectionShowErrorOverlay = false // Hide general error overlay
 
                                 if currentCardIndex < totalCards - 1 { // Proceed to next card
                                     withAnimation { currentCardIndex += 1 }
@@ -353,10 +353,10 @@ struct AddConnectionView: View {
 
 
                 } // End Main VStack
-                .disabled(isSaving) // Disable interaction while saving (same as before)
+                .disabled(connectionIsSaving) // Disable interaction while saving (same as before)
 
                 // Saving Progress Overlay (same as before, generally fine)
-                if isSaving {
+                if connectionIsSaving {
                     Color.black.opacity(0.4).ignoresSafeArea()
                     ProgressView("saving...") // Changed text slightly
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -367,11 +367,11 @@ struct AddConnectionView: View {
                 }
 
                 // Error Overlay (Mirrored style from OnboardingView's error overlay)
-                if showErrorOverlay {
+                if connectionShowErrorOverlay {
                     Color.black.opacity(0.5)
                         .ignoresSafeArea()
                         .transition(.opacity)
-                        .onTapGesture { showErrorOverlay = false }
+                        .onTapGesture { connectionShowErrorOverlay = false }
 
                     VStack {
                         Spacer()
@@ -381,11 +381,11 @@ struct AddConnectionView: View {
                                  .foregroundColor(.red)
                              Text("Error Saving Connection") // Title
                                  .font(.headline).foregroundColor(.primaryText)
-                             Text(saveError ?? "An unknown error occurred. Please try again.") // Message
+                             Text(connectionSaveError ?? "An unknown error occurred. Please try again.") // Message
                                  .font(.footnote).foregroundColor(.secondaryText)
                                  .multilineTextAlignment(.center).padding(.horizontal)
                              Button("Dismiss") {
-                                 showErrorOverlay = false
+                                 connectionShowErrorOverlay = false
                              }
                                  .padding(.vertical, 10)
                                  .padding(.horizontal, 20)
@@ -416,12 +416,12 @@ struct AddConnectionView: View {
 
         if currentCardIndex < totalCards - 1 { // --- Trying to go "Next" ---
             if canProceedToNextCard {
-                showAgeError = false // Clear error if proceeding
+                connectionShowAgeError = false // Clear error if proceeding
                 withAnimation { currentCardIndex += 1 }
             } else {
                 // Cannot proceed. If on card 0, it's because age is nil (picker prevents <18).
                 if currentCardIndex == 0 {
-                    showAgeError = true // This will trigger the "you must be at least 18" if age is nil
+                    connectionShowAgeError = true // This will trigger the "you must be at least 18" if age is nil
                                         // because BasicsCardContent checks: (showAgeError && !(age ?? 0 >= 18))
                                         // If age is nil, !(nil ?? 0 >= 18) becomes !(false) which is true.
                 }
@@ -429,58 +429,57 @@ struct AddConnectionView: View {
             }
         } else { // --- Trying to "Save" (on the last card) ---
             if canSaveChanges {
-                showAgeError = false // Clear age error if saving
-                saveError = nil      // Clear general save error
-                showErrorOverlay = false // Hide overlay
+                connectionShowAgeError = false // Clear age error if saving
+                connectionSaveError = nil      // Clear general save error
+                connectionShowErrorOverlay = false // Hide overlay
                 saveConnection()
             } else {
                 // Cannot save. Determine reason and set appropriate error messages.
-                if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    saveError = "Connection name cannot be empty."
+                if connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    connectionSaveError = "Connection name cannot be empty."
                     // If age is ALSO an issue (e.g., nil), ensure BasicsCardContent can show it.
-                    if !(age != nil && age ?? 0 >= 18) { // Checks if age is nil or < 18
-                        showAgeError = true
+                    if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Checks if age is nil or < 18
+                        connectionShowAgeError = true
                     }
-                } else if !(age != nil && age ?? 0 >= 18) { // Name is fine, but age is nil or < 18.
-                    showAgeError = true // This is key for BasicsCardContent to show its error
-                    saveError = "Age must be selected and be 18 or older." // Overlay message
+                } else if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Name is fine, but age is nil or < 18.
+                    connectionShowAgeError = true // This is key for BasicsCardContent to show its error
+                    connectionSaveError = "Age must be selected and be 18 or older." // Overlay message
                     // Optionally, navigate back to the card with the age error:
                     // if currentCardIndex != 0 { // Only if not already on the basics card
                     //     withAnimation { currentCardIndex = 0 }
                     // }
                 } else {
                     // Some other validation for canSaveChanges failed.
-                    saveError = "Please ensure all required fields are valid and try again."
+                    connectionSaveError = "Please ensure all required fields are valid and try again."
                 }
-                showErrorOverlay = true // Show the general error overlay
+                connectionShowErrorOverlay = true // Show the general error overlay
             }
         }
     }
 
     func clearAllConnectionDataAndDismiss() {
         // Reset all @State variables to their initial values
-        name = ""
-        age = nil
-        gender = ""
-        pronouns = ""
-        ethnicity = ""
-        currentCity = ""
-        hometown = ""
-        school = ""
-        job = ""
-        greenlights = []
-        redlights = []
-        // allTopics = presetTopics // Often no need to clear if it's a static list
-        drinking = ""
-        datingPlatform = ""
-        lookingFor = ""
-        kids = ""
+        connectionName = ""
+        connectionAge = nil
+        connectionGender = ""
+        connectionPronouns = ""
+        connectionSchool = ""
+        connectionJob = ""
+        connectionDrinking = ""
+        connectionEthnicity = ""
+        connectionCurrentCity = ""
+        connectionHometown = ""
+        connectionGreenlights = []
+        connectionRedlights = []
+        connectionDatingPlatform = ""
+        connectionLookingFor = ""
+        connectionKids = ""
 
         currentCardIndex = 0 // Reset card index
-        showAgeError = false
-        saveError = nil
-        showErrorOverlay = false
-        isSaving = false // Just in case
+        connectionShowAgeError = false
+        connectionSaveError = nil
+        connectionShowErrorOverlay = false
+        connectionIsSaving = false // Just in case
 
         dismiss() // Dismiss the view
     }
@@ -488,20 +487,32 @@ struct AddConnectionView: View {
 
     func saveConnection() {
         print("Attempting to save connection...")
-        isSaving = true
-        saveError = nil // Clear previous errors
-        showErrorOverlay = false // Hide error overlay
+        connectionIsSaving = true
+        connectionSaveError = nil // Clear previous errors
+        connectionShowErrorOverlay = false // Hide error overlay
 
         resolveTopicConflicts()
 
-        let payload = OnboardingPayload( // Reusing OnboardingPayload
-            name: name, age: age, gender: gender, pronouns: pronouns, ethnicity: ethnicity,
-            currentCity: currentCity, hometown: hometown, school: school, job: job,
-            drinking: drinking, datingPlatform: datingPlatform, lookingFor: lookingFor, kids: kids,
-            greenlights: greenlights, redlights: redlights
-        )
+        let nameForConnection = self.connectionName
 
-        guard let encodedPayload = try? JSONEncoder().encode(payload) else {
+        let connectionPayload = AddConnectionPayload(
+            connectionName: nameForConnection,
+            connectionAge: connectionAge,
+            connectionGender: connectionGender,
+            connectionPronouns: connectionPronouns,
+            connectionSchool: connectionSchool,
+            connectionJob: connectionJob,
+            connectionDrinking: connectionDrinking,
+            connectionEthnicity: connectionEthnicity,
+            connectionCurrentCity: connectionCurrentCity,
+            connectionHometown: connectionHometown,
+            connectionGreenlights: connectionGreenlights,
+            connectionRedlights: connectionRedlights,
+            connectionDatingPlatform: connectionDatingPlatform,
+            connectionLookingFor: connectionLookingFor,
+            connectionKids: connectionKids)
+
+        guard let encodedPayload = try? JSONEncoder().encode(connectionPayload) else {
             handleSaveResult(.failure(NSError(domain: "Encoding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to prepare connection data."])))
             return
         }
@@ -525,7 +536,10 @@ struct AddConnectionView: View {
         }
         request.httpBody = encodedPayload
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        URLSession.shared.dataTask(with: request) {
+ data,
+ response,
+ error in
             DispatchQueue.main.async {
                 if let networkError = error {
                     self.handleSaveResult(.failure(networkError))
@@ -541,7 +555,9 @@ struct AddConnectionView: View {
 
                 guard (200...299).contains(httpResponse.statusCode) else {
                     var serverMsg = "Server error (\(httpResponse.statusCode))."
-                    if let responseData = data, let errorString = String(data: responseData, encoding: .utf8), !errorString.isEmpty {
+                    if let responseData = data,
+ let errorString = String(data: responseData, encoding: .utf8),
+ !errorString.isEmpty {
                         serverMsg += " Details: \(errorString)"
                     }
                     self.handleSaveResult(.failure(NSError(domain: "Server", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: serverMsg])))
@@ -551,10 +567,30 @@ struct AddConnectionView: View {
                 // --- SUCCESS ---
                 // Optionally decode response if needed
                 if let responseData = data {
-                    struct SaveConnectionResponse: Decodable { let connection_id: String? } // Make id optional
+                    struct SaveConnectionResponse: Decodable {
+                        let connection_id: String?
+                    } // Make id optional
                     do {
-                        let decodedResponse = try JSONDecoder().decode(SaveConnectionResponse.self, from: responseData)
-                        print("Connection saved successfully. Received Connection ID: \(decodedResponse.connection_id ?? "N/A")")
+                        let decodedResponse = try JSONDecoder().decode(
+                            SaveConnectionResponse.self,
+                            from: responseData
+                        )
+                        if let newConnectionId = decodedResponse.connection_id {
+                            self.handleSaveResult(
+                                .success((
+                                    id: newConnectionId,
+                                    name: nameForConnection)
+                                )
+                            )
+                            print("Connection saved successfully. Received Connection ID: \(decodedResponse.connection_id ?? "N/A")")
+                        } else {
+                            print("Connection saved successfully (no data in response).")
+                            self.handleSaveResult(.success(
+                                (id: nil, name: nameForConnection)
+                                )
+                            )
+                        }
+
                     } catch {
                          print("Warning: Could not decode save connection response: \(error.localizedDescription)")
                          // Proceed with success even if decoding response fails, as 2xx means server accepted it
@@ -562,35 +598,46 @@ struct AddConnectionView: View {
                 } else {
                     print("Connection saved successfully (no data in response).")
                 }
-                self.handleSaveResult(.success(())) // Pass a void success
+                self.handleSaveResult(.success(
+                    (id: nil, name: nameForConnection))
+                ) // Pass a void success
             }
         }.resume()
     }
 
     // Unified way to handle save results and update UI
-    func handleSaveResult(_ result: Result<Void, Error>) {
-        isSaving = false
+    func handleSaveResult(_ result: Result<(id: String?, name: String), Error>) {
+        connectionIsSaving = false
         switch result {
-        case .success:
+        case .success(let connectionDetails):
             print("Connection saved successfully! Dismissing view.")
+                if let id = connectionDetails.id, !connectionDetails.name.isEmpty {
+                    connectionManager
+                        .setActiveConnection(
+                            connectionId: id,
+                            connectionName: connectionDetails.name
+                        )
+                } else {
+                    print("Connection saved, but no connection ID provided")
+                }
             // connectionManager.connectionAddedSuccessfully() // If you have such a method
             dismiss() // Dismiss the view on successful save
             // No success overlay needed as the view dismisses. If one were desired, it would be set here.
         case .failure(let error):
             print("Save Error: \(error.localizedDescription)")
-            saveError = error.localizedDescription
-            showErrorOverlay = true // Show the mirrored error overlay
+                connectionSaveError = error.localizedDescription
+            connectionShowErrorOverlay = true // Show the mirrored error overlay
         }
     }
 
     private func resolveTopicConflicts() {
-        let greenSet = Set(greenlights)
-        let redSet = Set(redlights)
+        let greenSet = Set(connectionGreenlights)
+        let redSet = Set(connectionRedlights)
         let conflictingTopics = greenSet.intersection(redSet)
         if !conflictingTopics.isEmpty {
             print("Resolving topic conflicts for: \(conflictingTopics)")
-            greenlights.removeAll { conflictingTopics.contains($0) }
-            redlights.removeAll { conflictingTopics.contains($0) }
+            connectionGreenlights.removeAll { conflictingTopics.contains($0) }
+            connectionRedlights.removeAll { conflictingTopics.contains($0) }
         }
     }
 }

@@ -13,6 +13,7 @@ struct spurlyApp: App {
     @StateObject private var authManager = AuthManager()
     @StateObject private var sideMenuManager = SideMenuManager()
     @StateObject private var connectionManager = ConnectionManager()
+    @StateObject private var spurManager = SpurManager()
 
     var body: some Scene {
         WindowGroup {
@@ -27,6 +28,7 @@ struct spurlyApp: App {
             .environmentObject(authManager) // Pass AuthManager to the environment
             .environmentObject(sideMenuManager) // Pass SideMenuManager to the environment
             .environmentObject(connectionManager) // Pass ConnectionManager to the environment
+            .environmentObject(spurManager)
         }
     }
 }
