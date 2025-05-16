@@ -116,7 +116,7 @@ struct AddConnectionView: View {
                                 clearAllConnectionDataAndDismiss()
                             }) {
                                 Image.cancelAddConnectionIcon
-                                    .frame(width: 44, height: 44) // Adjust size as
+                                    .frame(width: 35, height: 35) // Adjust size as
                             }
                         }
                         .padding(.horizontal)

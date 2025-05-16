@@ -105,9 +105,9 @@ struct SpursView: View {
                 .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4)
             }
             .padding(.horizontal)
-            .padding(.top, geometry.safeAreaInsets.top > 50 ? geometry.safeAreaInsets.top - 70 : geometry.safeAreaInsets.top)
+            .padding(.top, geometry.safeAreaInsets.top > 40 ? geometry.safeAreaInsets.top - 50 : geometry.safeAreaInsets.top)
             Image.bannerLogo // From ViewsExtensions.swift
-                .frame(height: screenHeight * 0.1)
+                .frame(height: screenHeight * 0.11)
             Text.bannerTag // From ViewsExtensions.swift, already lowercase
                 .font(.caption)
         }
