@@ -8,8 +8,8 @@ import SwiftUI
 import PhotosUI // Ensure PhotosUI is imported
 
 enum ContextInputMode: String, CaseIterable, Identifiable {
-    case photos = "Photos"
-    case text = "Text"
+    case photos = "pics"
+    case text = "text"
     var id: String { self.rawValue }
 }
 
@@ -106,36 +106,16 @@ struct ContextInputView: View {
 
 
                         // --- Dynamic Connection Display ---
-                        if let connectionName = connectionManager.currentConnectionName, connectionManager.currentConnectionId != nil {
-                            Spacer()
-                            HStack(spacing: 6) {
-                                Text(connectionName)
-                                    .font(.caption) // Or your desired font
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primaryBg)
-                                    .lineLimit(1)
-                                    .padding(.trailing, 2)
-
-
-                                Button(action: {
-                                    connectionManager.clearActiveConnection()
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(
-                                            .primaryBg.opacity(0.7)
-                                        ) // Or your desired color
-                                        .imageScale(.medium)
-                                }
+                        if connectionManager.currentConnectionId != nil { // Check if connection is active
+                            Button(action: {
+                                connectionManager.clearActiveConnection()
+                            }) {
+                                Image.cancelAddConnectionIcon // Assumes Image.CancelAddConnectionIcon is defined (e.g., in an extension or assets)
+                                    .frame(width: 35, height: 35) // Ensure tappable area
                             }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 10)
-                            .background(
-                                Capsule().fill(Color.primaryText.opacity(0.9))
-                            )
                             .transition(.opacity.combined(with: .scale(scale: 0.9))) // Animation
-                            .frame(width: 100, height: 44) // Constrain width
                             .shadow(
-                                color: .primaryText.opacity(0.5),
+                                color: .black.opacity(0.5),
                                 radius: 5,
                                 x: 3,
                                 y: 3
@@ -172,26 +152,62 @@ struct ContextInputView: View {
                              // Conversation Input Card with Opacity
 
                     VStack(spacing: 8) {
-                        // --- NEW: Input Mode Picker ---
-                        Picker("Input Mode", selection: $inputMode) {
-                            ForEach(ContextInputMode.allCases) { mode in
-                                Text(mode.rawValue).tag(mode)
-                                //.font(.caption)
+                        HStack {
+                            Picker("Input Mode", selection: $inputMode) {
+                                ForEach(ContextInputMode.allCases) { mode in
+                                    Text(mode.rawValue).tag(mode)
+                                }
+                            }
+                            .frame(maxWidth: 200, maxHeight: 60)
+                            .pickerStyle(.segmented)
+                            .scaleEffect(0.85)
+                            .shadow(
+                                color: .black.opacity(0.4),
+                                radius: 5,
+                                x: 3,
+                                y: 3
+                            )
+                            .onChange(of: inputMode) { _, _ in // Keep onChange logic with the picker
+                                conversationMessages.removeAll()
+                                conversationImages.removeAll()
+                                selectedPhotos.removeAll()
+                                newMessageText = ""
+                                photoSubmissionError = nil
+                                photosSubmittedSuccessfully = false
+                                conversationText = ""
+                            }
+
+                            Spacer() // Pushes connection capsule to the right
+
+                            // Conditional Connection Name Capsule (now on the card, no 'x' button)
+                            if let connectionName = connectionManager.currentConnectionName, connectionManager.currentConnectionId != nil {
+                                HStack(spacing: 4) {
+                                    Text(connectionName)
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primaryBg) // Or a suitable color for capsule text
+                                        .lineLimit(1)
+                                }
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 10)
+                                .background(
+                                    Capsule().fill(Color.primaryText.opacity(0.9))
+                                        .shadow(
+                                            color: .black.opacity(0.4),
+                                            radius: 5,
+                                            x: 3,
+                                            y: 3
+                                        )
+                                )
+                                .padding(.horizontal)
+                                .transition(.opacity.combined(with: .scale(scale: 0.85)))
+
+                                // .frame(maxWidth: geo.size.width * 0.35) // Optional: constrain width if needed
                             }
                         }
-                        .pickerStyle(.segmented)
-                        .scaleEffect(0.85) // Slightly smaller picker
-                        .padding(.horizontal, geo.size.width * 0.1) // Adjust padding to match card width
-                        .padding(.top, 8) // Add top padding for spacing
-                        .onChange(of: inputMode) { _, _ in
-                            conversationMessages.removeAll()
-                            conversationImages.removeAll()
-                            selectedPhotos.removeAll() // Clear picker selection
-                            newMessageText = ""         // Clear manual input field
-                            photoSubmissionError = nil  // Clear photo errors
-                            photosSubmittedSuccessfully = false // Reset photo success state
-                            conversationText = ""
-                        }
+                       // .padding(.horizontal) // Padding for this HStack row within the card
+                        .padding(.top, 1)      // Top padding for this row
+                        .animation(.easeInOut, value: connectionManager.currentConnectionId)
 
                         ZStack {
                             ScrollViewReader { proxy in // Optional: Allows scrolling to specific messages

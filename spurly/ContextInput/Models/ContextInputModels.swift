@@ -38,7 +38,7 @@ struct MessageRow: View {
                 .lineLimit(nil)
                 .padding(EdgeInsets(top: 5, leading: 8, bottom: 5, trailing: 8)) // Adjust padding for bubble look
                 .background(
-                    Color.spurlyAccent1.opacity(0.15)
+                    Color.accent1.opacity(0.15)
                 ) // Slightly stronger background tint
                 .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous)) // Use clipShape for better corner rounding
                 // Limit bubble width to prevent overly wide bubbles

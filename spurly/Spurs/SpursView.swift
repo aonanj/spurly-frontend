@@ -35,7 +35,7 @@ struct SpursView: View {
 
     // Layout constants
     let cardWidthMultiplier: CGFloat = 0.8
-    let cardHeightMultiplier: CGFloat = 0.4 // Adjusted for content
+    let cardHeightMultiplier: CGFloat = 0.42 // Adjusted for content
     let screenHeight = UIScreen.main.bounds.height
     let screenWidth = UIScreen.main.bounds.width
 
@@ -45,7 +45,7 @@ struct SpursView: View {
                 Color.tappablePrimaryBg.ignoresSafeArea() //
                 Image.tappableBgIcon // From ViewsExtensions.swift
                     .frame(width: screenWidth * 1.5, height: screenHeight * 1.5)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.47)
+                    .position(x: screenWidth / 2, y: screenHeight * 0.46)
 
                 if totalCards == 0 {
                     emptyStateView
@@ -159,47 +159,72 @@ struct SpursView: View {
     }
 
     private func iconNavigationSection(geometry: GeometryProxy) -> some View {
-        HStack(spacing: 20) {
-            ForEach(Array(spurManager.spurs.enumerated()), id: \.element.id) { (displayIndex, spur) in
-                if spur.iconCategoryIndex >= 0 && spur.iconCategoryIndex < navigationIconSets.count {
-                    let iconSet = navigationIconSets[spur.iconCategoryIndex]
-                    Button(action: {
-                        withAnimation {
-                            currentCardIndex = displayIndex
+        HStack(spacing: 20) { //
+            ForEach(Array(spurManager.spurs.enumerated()), id: \.element.id) { (displayIndex, spur) in //
+                if spur.iconCategoryIndex >= 0 && spur.iconCategoryIndex < navigationIconSets.count { //
+                    let iconSet = navigationIconSets[spur.iconCategoryIndex] //
+                    Button(action: { //
+                        withAnimation { //
+                            currentCardIndex = displayIndex //
                         }
                     }) {
-                        Image(currentCardIndex == displayIndex ? iconSet.activeName : iconSet.inactiveName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 30, height: 30)
-                            .foregroundColor(.primaryText.opacity(0.7))
-                            
-                            .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4)
-                            //.padding(5)
+                        VStack(spacing: 4) { // Wrap icon in VStack to add dot below
+                            Image(currentCardIndex == displayIndex ? iconSet.activeName : iconSet.inactiveName) //
+                                .resizable() //
+                                .scaledToFit() //
+                                .frame(width: 30, height: 30) //
+                                .foregroundColor(.primaryText.opacity(0.7)) //
+                                .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4) //
+
+                            // Add a dot indicator if this is the active icon
+                            if currentCardIndex == displayIndex {
+                                Circle()
+                                    .fill(Color.primaryText.opacity(0.7)) // Or your desired dot color e.g. Color.brandColor
+                                    .frame(width: 7, height: 7)
+                                    .shadow(color: .black.opacity(0.55), radius: 5, x: 4, y: 4)
+                                    .transition(.opacity.combined(with: .scale)) // Animation for dot
+                            } else {
+                                // Placeholder to maintain layout consistency if needed, otherwise dot just won't appear
+                                Circle().fill(Color.clear).frame(width: 7, height: 7)
+                            }
+                        }
                     }
                 }
-                if (displayIndex < spurManager.spurs.count - 1) {
-                    Image(systemName: "ellipsis") // Changed icon
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(.primaryText.opacity(0.5))
-                        .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4)
+                if (displayIndex < spurManager.spurs.count - 1) { //
+                    Image(systemName: "ellipsis") //
+                        .resizable() //
+                        .scaledToFit() //
+                        .frame(width: 14, height: 14) //
+                        .padding(.bottom, 10)
+                        .foregroundColor(.primaryText.opacity(0.5)) //
+                        .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4) //
                 }
             }
         }
-        .frame(maxWidth: .infinity)
-        //.padding(.vertical, 10)
+        .frame(maxWidth: .infinity) //
+        .animation(.easeInOut(duration: 0.2), value: currentCardIndex) // Animation for the whole HStack when index changes
     }
 
     private func footerSection(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 2) {
-            Text("interact with each spur using the buttons on the card.")
-                .font(.footnote)
-                .foregroundColor(.secondaryText.opacity(0.6)) // lowercase
+        VStack(alignment: .center) {
+            (
+                Text("pick a spur ") +
+                Text(Image(systemName: "mail.stack.fill")) +
+                Text(" to edit ") +
+                Text(Image(systemName: "pencil")) +
+                Text(" and copy ") +
+                Text(Image(systemName: "document.on.document.fill")) +
+                Text("\nsave ") +
+                Text(Image(systemName: "hand.thumbsup.fill")) +
+                Text(" what you like, delete ") +
+                Text(Image(systemName: "hand.thumbsdown.fill")) +
+                Text(" what you don't")
+            )
+            .font(.footnote)
+            .foregroundColor(.secondaryText.opacity(0.6)) // lowercase
         }
         .frame(maxWidth: .infinity)
-        .padding(.bottom, (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0) + 10)
+        //.padding(.bottom, (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0))
     }
 
     private var feedbackOverlay: some View {
@@ -264,6 +289,12 @@ struct SpursView: View {
 struct SpursView_Previews: PreviewProvider {
     static var previews: some View {
         let mockSpurManager = SpurManager()
+        let mockConnectionManager = ConnectionManager()
+        mockConnectionManager
+            .setActiveConnection(
+                connectionId: "conn123",
+                connectionName: "Sarah"
+            )
         // Assuming BackendSpurData is defined globally or imported
         let mockBackendSpurs = [
             BackendSpurData(
@@ -283,6 +314,7 @@ struct SpursView_Previews: PreviewProvider {
 
         return SpursView()
             .environmentObject(mockSpurManager)
+            .environmentObject(mockConnectionManager)
     }
 }
 #endif

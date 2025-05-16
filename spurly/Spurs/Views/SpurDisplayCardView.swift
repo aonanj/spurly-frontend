@@ -12,6 +12,7 @@ struct SpurDisplayCardView: View {
     let onSave: () -> Void
     let onDelete: () -> Void
 
+    @EnvironmentObject var connectionManager: ConnectionManager
     @FocusState private var isTextEditorFocused: Bool
 
     private let cardBackgroundColor = Color.cardBg
@@ -20,23 +21,55 @@ struct SpurDisplayCardView: View {
     private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
 
     private let buttonIconScale: Image.Scale = .medium
-    private let buttonVerticalPadding: CGFloat = 1
+    private let buttonVerticalPadding: CGFloat = 5
     private let buttonHorizontalPadding: CGFloat = 8
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 2) {
-                Spacer(minLength: 2)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .center) { // Using .top for better alignment if capsule and title have different heights
+                    // Left-aligned Icon and Title
+                    HStack(spacing: 8) {
+                        Image(cardIconName)
+                            .resizable().scaledToFit().frame(width: 35, height: 35)
+                            .foregroundColor(Color.primaryText) // Use defined color palette
+                            .shadow(
+                                color: Color.black.opacity(0.5), // Shadow for the capsule
+                                radius: 5, x: 3, y: 3
+                            )
+                        Text(title.lowercased())
+                            .font(cardTitleFont)
+                            .foregroundColor(Color.primaryText) // Use defined color palette
+                            .shadow(
+                                color: Color.black.opacity(0.6), // Shadow for the capsule
+                                radius: 5, x: 3, y: 3
+                            )
+                    }
+                    .padding(.bottom, 10)
 
-                HStack(alignment: .center, spacing: 8) {
-                    Image(cardIconName)
-                        .resizable().scaledToFit().frame(width: 30, height: 30)
-                        .foregroundColor(.primaryText)
-                    Text(title.lowercased())
-                        .font(cardTitleFont)
-                        .foregroundColor(.primaryText)
+                    Spacer() // Pushes connection capsule to the right
+
+                    // Conditional Connection Name Capsule
+                    if let connectionName = connectionManager.currentConnectionName, connectionManager.currentConnectionId != nil {
+                        HStack(
+                            alignment: .top
+                        ) { // Inner HStack for capsule content
+                            Text(connectionName)
+                                .font(.caption)
+                                .foregroundColor(Color.primaryBg) // Text color (e.g., light text on dark capsule)
+                                .lineLimit(1)
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .background(Capsule().fill(Color.primaryText.opacity(0.7))) // Capsule background
+                        .transition(.opacity.combined(with: .scale(scale: 0.85))) // Animation for appearance
+                        .shadow(
+                            color: Color.black.opacity(0.4), // Shadow for the capsule
+                            radius: 5, x: 3, y: 3
+                        )
+                        .padding(.bottom, 10)
+                    }
                 }
-                .padding(.bottom, 5)
 
                 TextEditor(text: $spurText)
                     .focused($isTextEditorFocused)
@@ -54,14 +87,12 @@ struct SpurDisplayCardView: View {
                     )
 
 
-                Spacer(minLength: 10)
-
                 HStack {
                     // Copy Button
                     Button(action: { onCopy(); isTextEditorFocused = false; }) {
                         Label { Text("copy") } icon: { Image(systemName: "doc.on.doc.fill").imageScale(buttonIconScale) }
                             .padding(.vertical, buttonVerticalPadding)
-                            .padding(.horizontal, buttonHorizontalPadding)
+                            .padding(.horizontal, 2)
                             .frame(minWidth: 30)
                             .labelStyle(.iconOnly)
                             .foregroundStyle(Color.brandColor)
@@ -100,8 +131,9 @@ struct SpurDisplayCardView: View {
                         //.tint(.accent2)
                     }
                 }
-                .padding(.horizontal)
-                Spacer(minLength: 2)
+                //.padding(.horizontal)
+                .padding(.bottom, 10)
+                Spacer(minLength: 12)
             }
             .padding()
         }
