@@ -1,9 +1,9 @@
-
-
-
-
-
-
+//
+//  OnboardingView.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
 
 import SwiftUI
 import UIKit

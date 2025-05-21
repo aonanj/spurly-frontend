@@ -1,8 +1,8 @@
 //
 //  SideMenuManager.swift
-//  spurly
 //
-//  Created by Alex Osterlind on 4/29/25.
+//  Author: phaeton order llc
+//  Target: spurly
 //
 
 import SwiftUI
@@ -14,26 +14,23 @@ final class SideMenuManager: ObservableObject {
 
     /// Opens the side menu (can wrap in animation)
     func openSideMenu() {
-        print("Open side menu not implemented yet")
-    //    withAnimation {
-    //        isMenuOpen = true
-    //    }
+        withAnimation {
+            isMenuOpen = true
+        }
     }
 
     /// Closes the side menu
     func closeSideMenu() {
-        print("Close side menu not implemented yet")
-    //    withAnimation {
-    //        isMenuOpen = false
-    //    }
+        withAnimation {
+            isMenuOpen = false
+        }
     }
 
     /// Toggles the menu state
     func toggleSideMenu() {
-        print("Toggle side menu not implemented yet")
-//        withAnimation {
-//            isMenuOpen.toggle()
-//        }
+        withAnimation {
+            isMenuOpen.toggle()
+        }
     }
 }
 

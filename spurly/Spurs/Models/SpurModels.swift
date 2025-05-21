@@ -1,4 +1,9 @@
+//
 // SpurModels.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
 
 import Foundation
 
@@ -6,7 +11,7 @@ struct Spur: Identifiable, Equatable {
     let id: String
     var variation: String
     var text: String
-    let iconCategoryIndex: Int // 0 for Main, 1 for Warm, 2 for Cool, 3 for Playful
+    let iconCategoryIndex: Int // 0 for Main, 1 for Warm, 2 for Cool, 3 for Banter
 
     init(id: String, variation: String, text: String, iconCategoryIndex: Int) {
         self.id = id

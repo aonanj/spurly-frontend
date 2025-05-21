@@ -1,8 +1,8 @@
 //
 //  ChipView.swift
-//  spurly
 //
-//  Created by Alex Osterlind on 4/29/25.
+//  Author: phaeton order llc
+//  Target: spurly
 //
 
 import SwiftUI

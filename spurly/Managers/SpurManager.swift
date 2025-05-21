@@ -1,4 +1,9 @@
-// SpurManager.swift
+//
+//  SpurManager.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
 
 import SwiftUI
 import Combine

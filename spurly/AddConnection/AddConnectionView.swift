@@ -1,6 +1,8 @@
-// spurly/AddConnection/AddConnectionView.swift
-// Created: 2025-05-04
-// Updated to mirror OnboardingView's look and feel
+//  AddConnectionView.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
 
 import SwiftUI
 
@@ -655,7 +657,7 @@ struct AddConnectionView_Previews: PreviewProvider {
     static var previews: some View {
         AddConnectionView()
             .environmentObject(ConnectionManager())
-            .environmentObject(AuthManager(userId: "previewUser", token: "previewToken"))
+            .environmentObject(AuthManager())
     }
 }
 #endif

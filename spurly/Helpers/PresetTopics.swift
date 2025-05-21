@@ -1,3 +1,10 @@
+//
+// PresetTopics.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
+
 let presetTopics: [String] = [
     "hiking",
     "photography",

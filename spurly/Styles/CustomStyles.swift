@@ -1,8 +1,8 @@
 //
 //  CustomStyles.swift
-//  spurly
 //
-//  Created by Alex Osterlind on 4/29/25.
+//  Author: phaeton order llc
+//  Target: spurly
 //
 
 import SwiftUI
@@ -41,4 +41,70 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
     }
     private var isPlaceholder: Bool { if let o = selection as? Optional<Any>, o == nil { return true }; if let s = selection as? String, s.isEmpty { return true }; return false }
     private var currentSelectionText: String { isPlaceholder ? "" : textMapping(selection) }
+}
+
+// Primary Button Style
+struct PrimaryButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.title2)
+            .fontDesign(.serif)
+            .fontWeight(.semibold)
+            .foregroundColor(Color("AccentColorContrast")) // Or your specific color
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color("SpurlyPrimaryButton")) // Or your specific color
+            .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2) // Optional shadow
+    }
+}
+
+// Secondary Button Style
+struct SecondaryButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.headline)
+            .foregroundColor(Color("SpurlyPrimaryButton")) // Text color for secondary
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color("SpurlyPrimaryButton"), lineWidth: 2) // Border
+            )
+            .cornerRadius(10) // Ensure cornerRadius is applied to the overall shape
+    }
+}
+
+
+struct SignInButtonModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 17))
+            .fontWeight(.semibold)
+            .foregroundColor(Color.primaryText) // Text color for secondary
+            .padding()
+            .frame(width: 220, height: 50)
+            .cornerRadius(10) // Ensure cornerRadius is applied to the overall shape
+            .background(
+                Color.highlight
+                ).cornerRadius(10).opacity(0.7)
+            .shadow(color: Color.black.opacity(0.5), radius: 5, x: 5, y: 5)
+    }
+}
+
+
+
+// Extension to make them easier to apply (optional, but good practice)
+extension View {
+    func primaryButtonStyle() -> some View {
+        self.modifier(PrimaryButtonModifier())
+    }
+
+    func secondaryButtonStyle() -> some View {
+        self.modifier(SecondaryButtonModifier())
+    }
+
+    func socialButtonStyle(backgroundColor: Color, foregroundColor: Color) -> some View {
+        self.modifier(SocialButtonModifier(backgroundColor: backgroundColor, foregroundColor: foregroundColor))
+    }
 }

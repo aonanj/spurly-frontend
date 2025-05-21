@@ -1,8 +1,8 @@
 //
 //  AddConnectionModels.swift
-//  spurly
 //
-//  Created by Alex Osterlind on 5/7/25.
+//  Author: phaeton order llc
+//  Target: spurly
 //
 
 import SwiftUI

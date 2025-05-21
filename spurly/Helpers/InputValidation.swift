@@ -1,8 +1,8 @@
 //
 //  InputValidation.swift
-//  spurly
 //
-//  Created by Alex Osterlind on 4/26/25.
+//  Author: phaeton order llc
+//  Target: spurly
 //
 
 import SwiftUI

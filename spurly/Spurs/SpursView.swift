@@ -1,4 +1,9 @@
+//
 // SpursView.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
 
 import SwiftUI
 import UIKit // For UIPasteboard
@@ -45,7 +50,7 @@ struct SpursView: View {
                 Color.tappablePrimaryBg.ignoresSafeArea() //
                 Image.tappableBgIcon // From ViewsExtensions.swift
                     .frame(width: screenWidth * 1.5, height: screenHeight * 1.5)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.46)
+                    .position(x: screenWidth / 2, y: screenHeight * 0.48)
 
                 if totalCards == 0 {
                     emptyStateView
@@ -80,11 +85,11 @@ struct SpursView: View {
     private func contentVStack(geometry: GeometryProxy) -> some View {
         VStack(spacing: 0) {
             headerSection(geometry: geometry)
-            Spacer(minLength: screenHeight * 0.02)
+            Spacer(minLength: screenHeight * 0.07)
             buildCardDisplay(geometry: geometry)
-            Spacer(minLength: screenHeight * 0.03)
+                .padding(.bottom, 15)
             iconNavigationSection(geometry: geometry)
-            Spacer(minLength: screenHeight * 0.03)
+            Spacer(minLength: screenHeight * 0.04)
             footerSection(geometry: geometry)
         }
     }
@@ -208,17 +213,17 @@ struct SpursView: View {
     private func footerSection(geometry: GeometryProxy) -> some View {
         VStack(alignment: .center) {
             (
-                Text("pick a spur ") +
+                Text("pick a spur ").fontWeight(.semibold) +
                 Text(Image(systemName: "mail.stack.fill")) +
-                Text(" to edit ") +
+                Text(" to edit ").fontWeight(.semibold) +
                 Text(Image(systemName: "pencil")) +
-                Text(" and copy ") +
+                Text(" and copy ").fontWeight(.semibold) +
                 Text(Image(systemName: "document.on.document.fill")) +
-                Text("\nsave ") +
+                Text("\nsave ").fontWeight(.semibold) +
                 Text(Image(systemName: "hand.thumbsup.fill")) +
-                Text(" what you like, delete ") +
+                Text(" what you like, delete ").fontWeight(.semibold) +
                 Text(Image(systemName: "hand.thumbsdown.fill")) +
-                Text(" what you don't")
+                Text(" what you don't").fontWeight(.semibold)
             )
             .font(.footnote)
             .foregroundColor(.secondaryText.opacity(0.6)) // lowercase
@@ -293,22 +298,22 @@ struct SpursView_Previews: PreviewProvider {
         mockConnectionManager
             .setActiveConnection(
                 connectionId: "conn123",
-                connectionName: "Sarah"
+                connectionName: "name"
             )
         // Assuming BackendSpurData is defined globally or imported
         let mockBackendSpurs = [
             BackendSpurData(
                 id: "id1",
                 variation: "main spur".lowercased(),
-                text: "This is the main spur. It's a general suggestion for what you could say next. Feel free to edit it!"
+                text: "out on bail, fresh outta jail, california dreamin'. soon as i step on scene, i'm hearin' hoochies screamin'"
             ),
             BackendSpurData(
                 id: "id2",
                 variation: "warm spur".lowercased(),
-                text: "Here's a warmer, friendlier version for you! Try this if you want to be more inviting."
+                text: "fiendin' for money and alcohol, the life of a westside player, where cowards die and the strong ball"
             ),
-            BackendSpurData(id: "id3", variation: "cool spur", text: "A cooler, more direct approach might be this one. Good for getting straight to the point."),
-            BackendSpurData(id: "id4", variation: "playful spur", text: "Or, if you're feeling playful, try this lighthearted option!")
+            BackendSpurData(id: "id3", variation: "cool spur", text: "only in cali where we riot, not rally, to live and die. in la, we wearin' chucks, not ballys, that's right"),
+            BackendSpurData(id: "id4", variation: "banter spur", text: "famous cuz we throw grams. worldwide, recognize from long beach to rosecrans. it's westside so you know the row won't bow down to no man")
         ]
         mockSpurManager.loadSpurs(backendSpurData: mockBackendSpurs)
 

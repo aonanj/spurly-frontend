@@ -1,8 +1,8 @@
 //
 //  AddConnectionCards.swift
-//  spurly
 //
-//  Created by Alex Osterlind on 5/6/25.
+//  Author: phaeton order llc
+//  Target: spurly
 //
 
 
