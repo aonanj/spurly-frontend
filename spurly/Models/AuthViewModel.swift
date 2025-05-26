@@ -11,6 +11,7 @@ import AuthenticationServices // For Sign in with Apple
 import CryptoKit
 import GoogleSignIn
 import GoogleSignInSwift
+import Foundation
 
 class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     // Input fields for Login & Create Account
@@ -22,6 +23,7 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
     @Published var showLoginSuccessAlert = false // Or navigate directly
+    @Published var userProfileExists: Bool?
 
     // For Sign in with Apple
     @Published var appleSignInNonce: String?
@@ -60,12 +62,12 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
             guard let self = self else { return }
             self.isLoading = false
             switch result {
-            case .success(let authResponse):
-                print("Account created successfully: UserID \(authResponse.userId)")
-                self.authManager.login(userId: authResponse.userId, token: authResponse.token)
-                // self.showLoginSuccessAlert = true // Or trigger navigation
-            case .failure(let error):
-                self.handleAuthError(error)
+                case .success(let authResponse):
+                    print("Account created successfully: UserID \(authResponse.userId)")
+                    self.authManager.login(userId: authResponse.userId, token: authResponse.token)
+                    // self.showLoginSuccessAlert = true // Or trigger navigation
+                case .failure(let error):
+                    self.handleAuthError(error)
             }
         }
     }
@@ -83,26 +85,26 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
             guard let self = self else { return }
             self.isLoading = false
             switch result {
-            case .success(let authResponse):
-                print("Login successful: UserID \(authResponse.userId)")
-                self.authManager.login(userId: authResponse.userId, token: authResponse.token)
-                // self.showLoginSuccessAlert = true // Or trigger navigation
-            case .failure(let error):
-                self.handleAuthError(error)
+                case .success(let authResponse):
+                    print("Login successful: UserID \(authResponse.userId)")
+                    self.authManager.login(userId: authResponse.userId, token: authResponse.token)
+                    // self.showLoginSuccessAlert = true // Or trigger navigation
+                case .failure(let error):
+                    self.handleAuthError(error)
             }
         }
     }
 
     private func handleAuthError(_ error: NetworkError) {
         switch error {
-        case .serverError(let message, let statusCode):
-            self.errorMessage = "Server Error (\(statusCode)): \(message)"
-        case .decodingError:
-            self.errorMessage = "Could not understand server response. Please try again."
-        case .requestFailed:
-            self.errorMessage = "Network request failed. Please check your connection."
-        default:
-            self.errorMessage = "An unexpected error occurred: \(error.localizedDescription)"
+            case .serverError(let message, let statusCode):
+                self.errorMessage = "Server Error (\(statusCode)): \(message)"
+            case .decodingError:
+                self.errorMessage = "Could not understand server response. Please try again."
+            case .requestFailed:
+                self.errorMessage = "Network request failed. Please check your connection."
+            default:
+                self.errorMessage = "An unexpected error occurred: \(error.localizedDescription)"
         }
         print("AuthViewModel Error: \(self.errorMessage ?? "Unknown error")")
     }
@@ -135,68 +137,68 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         isLoading = true
         errorMessage = nil
         switch result {
-        case .success(let auth):
-            if let appleIDCredential = auth.credential as? ASAuthorizationAppleIDCredential {
-                guard let nonce = appleSignInNonce else {
-                    fatalError("Invalid state: A login callback was received, but no login nonce was stored.")
-                }
-                guard let appleIDToken = appleIDCredential.identityToken else {
-                    print("Unable to fetch identity token.")
-                    errorMessage = "Unable to fetch Apple ID token."
+            case .success(let auth):
+                if let appleIDCredential = auth.credential as? ASAuthorizationAppleIDCredential {
+                    guard let nonce = appleSignInNonce else {
+                        fatalError("Invalid state: A login callback was received, but no login nonce was stored.")
+                    }
+                    guard let appleIDToken = appleIDCredential.identityToken else {
+                        print("Unable to fetch identity token.")
+                        errorMessage = "Unable to fetch Apple ID token."
+                        isLoading = false
+                        return
+                    }
+                    guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+                        print("Unable to serialize token string from data: \(appleIDToken.debugDescription)")
+                        errorMessage = "Unable to process Apple ID token."
+                        isLoading = false
+                        return
+                    }
+
+                    let userId = appleIDCredential.user // This is a stable user identifier.
+                    let email = appleIDCredential.email
+                    let fullName = appleIDCredential.fullName
+
+                    print("Apple Sign In Success: UserID - \(userId)")
+                    print("Apple Sign In Token: \(idTokenString)") // This token needs to be sent to your backend for validation
+
+                    // TODO: Send this idTokenString (and nonce, user identifier) to your backend
+                    // Your backend will verify the token with Apple's servers and then
+                    // create an account or log in the user, returning your app's own auth token.
+                    // Example:
+                    // let socialRequest = SocialLoginRequest(provider: "apple", idToken: idTokenString, /* other details */)
+                    // NetworkService.shared.socialLogin(requestData: socialRequest) { ... }
+
+                    // For now, let's simulate a successful login with a placeholder token
+                    // In a real app, you'd get the token from your backend response.
+                    // self.authManager.login(userId: userId, token: "fakeAppleBackendToken-\(idTokenString.prefix(10))")
+
+                    // This is where you would call your backend. For now, we'll set an error message.
+                    self.errorMessage = "Apple Sign-In successful! Backend integration needed to complete login with token: \(idTokenString.prefix(20))..."
+                    self.isLoading = false
+
+
+                } else if let passwordCredential = auth.credential as? ASPasswordCredential {
+                    // Sign in with Password (for existing iCloud Keychain users)
+                    let username = passwordCredential.user
+                    let password = passwordCredential.password
+                    print("Apple Sign In with Keychain: User - \(username)")
+                    // You can use this to pre-fill your app's own login form or directly attempt login
+                    // self.email = username
+                    // self.password = password
+                    // loginUser()
+                    self.errorMessage = "Apple Keychain credential received. Integrate with your login flow."
                     isLoading = false
-                    return
-                }
-                guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
-                    print("Unable to serialize token string from data: \(appleIDToken.debugDescription)")
-                    errorMessage = "Unable to process Apple ID token."
-                    isLoading = false
-                    return
                 }
 
-                let userId = appleIDCredential.user // This is a stable user identifier.
-                let email = appleIDCredential.email
-                let fullName = appleIDCredential.fullName
-
-                print("Apple Sign In Success: UserID - \(userId)")
-                print("Apple Sign In Token: \(idTokenString)") // This token needs to be sent to your backend for validation
-
-                // TODO: Send this idTokenString (and nonce, user identifier) to your backend
-                // Your backend will verify the token with Apple's servers and then
-                // create an account or log in the user, returning your app's own auth token.
-                // Example:
-                // let socialRequest = SocialLoginRequest(provider: "apple", idToken: idTokenString, /* other details */)
-                // NetworkService.shared.socialLogin(requestData: socialRequest) { ... }
-
-                // For now, let's simulate a successful login with a placeholder token
-                // In a real app, you'd get the token from your backend response.
-                // self.authManager.login(userId: userId, token: "fakeAppleBackendToken-\(idTokenString.prefix(10))")
-
-                // This is where you would call your backend. For now, we'll set an error message.
-                self.errorMessage = "Apple Sign-In successful! Backend integration needed to complete login with token: \(idTokenString.prefix(20))..."
-                self.isLoading = false
-
-
-            } else if let passwordCredential = auth.credential as? ASPasswordCredential {
-                // Sign in with Password (for existing iCloud Keychain users)
-                let username = passwordCredential.user
-                let password = passwordCredential.password
-                print("Apple Sign In with Keychain: User - \(username)")
-                // You can use this to pre-fill your app's own login form or directly attempt login
-                // self.email = username
-                // self.password = password
-                // loginUser()
-                self.errorMessage = "Apple Keychain credential received. Integrate with your login flow."
+            case .failure(let error):
+                print("Apple Sign In Error: \(error.localizedDescription)")
+                if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
+                    errorMessage = "Sign in with Apple was canceled."
+                } else {
+                    errorMessage = "Apple Sign In failed: \(error.localizedDescription)"
+                }
                 isLoading = false
-            }
-
-        case .failure(let error):
-            print("Apple Sign In Error: \(error.localizedDescription)")
-            if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
-                errorMessage = "Sign in with Apple was canceled."
-            } else {
-                errorMessage = "Apple Sign In failed: \(error.localizedDescription)"
-            }
-            isLoading = false
         }
     }
 
@@ -218,16 +220,16 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
             // Fallback or error handling if window is not found
             // This could happen if called very early or in unusual contexts.
             // For most typical app flows, it should be available.
-            #if DEBUG
+#if DEBUG
             print("Warning: Could not get presentation anchor window. Using a new UIWindow as a fallback for debug.")
             return UIWindow() // Fallback for DEBUG, not ideal for production
-            #else
+#else
             // In a release build, you might prefer to fail more gracefully or log an error.
             // Depending on the context, returning a newly created window might still work or might cause issues.
             // For safety, ensure this part is robust in your app.
             // A common approach is to have a utility to get the key window.
             fatalError("Could not get presentation anchor window for ASAuthorizationController.")
-            #endif
+#endif
         }
         return window
     }
@@ -236,7 +238,7 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
     private func randomNonceString(length: Int = 32) -> String {
         precondition(length > 0)
         let charset: [Character] =
-            Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
         var result = ""
         var remainingLength = length
 
@@ -321,13 +323,13 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
             NetworkService.shared.signInWithGoogleToken(idToken: idToken, serverAuthCode: serverAuthCode) { backendResult in
                 self.isLoading = false
                 switch backendResult {
-                case .success(let authResponse):
-                    print("AuthViewModel: Successfully exchanged Google token with backend.")
-                    // AuthManager's login will trigger profile fetch
-                    self.authManager.login(userId: authResponse.userId, token: authResponse.token)
-                case .failure(let backendError):
-                    self.handleAuthError(backendError) // Use existing error handler
-                    print("AuthViewModel: Backend token exchange failed: \(backendError.localizedDescription)")
+                    case .success(let authResponse):
+                        print("AuthViewModel: Successfully exchanged Google token with backend.")
+                        // AuthManager's login will trigger profile fetch
+                        self.authManager.login(userId: authResponse.userId, token: authResponse.token)
+                    case .failure(let backendError):
+                        self.handleAuthError(backendError) // Use existing error handler
+                        print("AuthViewModel: Backend token exchange failed: \(backendError.localizedDescription)")
                 }
             }
         }
@@ -354,6 +356,77 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         password = ""
         confirmPassword = ""
         errorMessage = nil
+    }
+
+    func checkAuthentication() {
+        isLoading = true // Start loading
+        if authManager.isAuthenticated, let userId = authManager.userId, let token = authManager.token {
+            // If authenticated, immediately check for profile existence
+            NetworkService.shared.getUserProfile(userId: userId, token: token) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let profileResponse):
+                        self.userProfileExists = profileResponse.exists
+                    case .failure(let error):
+                        // If getUserProfile fails (e.g., 404 or other errors),
+                        // we assume the profile doesn't exist for UI purposes.
+                        // AuthManager's checkAuthentication might have already handled this
+                        // by setting userProfileExists to false for 404.
+                        // This ensures it's false if any other error occurs during profile check.
+                        self.userProfileExists = false
+                        print("AuthViewModel: Error checking user profile - \(error.localizedDescription)")
+                        if case .serverError(let message, let statusCode) = error {
+                            print("AuthViewModel: Server error (\(statusCode)) checking profile: \(message)")
+                        }
+                    }
+                    self.isLoading = false // Stop loading after profile check
+                }
+            }
+        } else {
+            // Not authenticated or missing details
+            userProfileExists = false
+            isLoading = false // Stop loading if not authenticated
+        }
+    }
+
+    func completeOnboarding(data: OnboardingPayload, completion: @escaping (Bool, String?) -> Void) {
+        // 1. Get the auth token from AuthManager
+        guard let token = authManager.token, let userId = authManager.userId else {
+            completion(false, "User is not authenticated. Cannot complete onboarding.")
+            return
+        }
+
+
+        let requestData = OnboardingRequest(
+            name: data.name ?? "",
+            age: data.age ?? 0,
+            profileText: data.profile_context ?? ""
+        )
+
+        // 3. Use the NetworkService to submit the profile
+        NetworkService.shared.submitOnboardingProfile(requestData: requestData, authToken: token) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let response):
+
+                    // *** THE KEY CHANGE IS HERE ***
+                    // Instead of setting a state, we re-check the profile.
+                    // This will update the `userProfileExists` property to true,
+                    // which will trigger the navigation in the main app view.
+                    self?.authManager.fetchUserProfile(userId: userId, token: token)
+
+                    completion(true, nil)
+
+                case .failure(let error):
+                    let errorMessage = "Failed to save your profile. Please try again."
+                    print("Onboarding failed: \(error.localizedDescription)")
+                    if case .serverError(let message, let statusCode) = error {
+                        print("Server error (\(statusCode)): \(message)")
+                    }
+                    completion(false, errorMessage)
+                }
+            }
+        }
     }
 }
 

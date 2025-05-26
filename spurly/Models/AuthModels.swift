@@ -57,3 +57,11 @@ struct APIErrorResponse: Codable, Error {
         case errorCode = "error_code"
     }
 }
+
+enum UserState {
+    case unknown
+    case unauthenticated
+    case authenticated // User is logged in, but not yet onboarded
+    case onboarded     // User is logged in AND has completed onboarding
+    case error(String)
+}

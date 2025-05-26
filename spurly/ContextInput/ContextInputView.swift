@@ -111,7 +111,7 @@ struct ContextInputView: View {
                 .offset(x: sideMenuManager.isMenuOpen ? self.menuWidthValue : CGFloat(0)) //
                 .animation(.easeInOut, value: sideMenuManager.isMenuOpen)
                 .disabled(sideMenuManager.isMenuOpen)
-                .opacity(0.82)
+                .opacity(0.89)
                 .zIndex(2)
 
                 dimmingOverlayWhenMenuIsOpen
@@ -163,19 +163,21 @@ struct ContextInputView: View {
     private var headerView: some View {
         HStack { //
             Button(action: { sideMenuManager.toggleSideMenu() }) { //
-                Image.menuIcon.frame(width: 44, height: 44) //
-            }
+                Image.menuIcon//
+            }.frame(width: 50, height: 50)
             Spacer() //
             if connectionManager.currentConnectionId != nil { //
                 Button(action: { connectionManager.clearActiveConnection() }) { //
-                    Image.cancelAddConnectionIcon.frame(width: 35, height: 35) //
+                    Image.cancelAddConnectionIcon//
                 }
+                .frame(width: 50, height: 50)
                 .transition(.opacity.combined(with: .scale(scale: 0.9))) //
                 .shadow(color: .black.opacity(0.5), radius: 5, x: 3, y: 3) //
             } else {
                 Button(action: { connectionManager.addNewConnection() }) { //
-                    Image.connectionIcon.frame(width: 44, height: 44) //
+                    Image.connectionIcon//
                 }
+                .frame(width: 50, height: 50)
                 .transition(.opacity.combined(with: .scale(scale: 0.9))) //
             }
         }
@@ -275,12 +277,13 @@ struct ContextInputView: View {
                              ImageThumbnailView(image: conversationImages[index]) { removeImage(at: index) } //
                          }
                          Spacer() //
-                     }
+                     }.padding(.horizontal, 8)
                  }
                  .frame(height: 60).transition(.opacity.combined(with: .move(edge: .bottom))) //
              }
          }
          .padding(.bottom, (inputMode == .photos && conversationImages.isEmpty) ? 0 : 5) //
+         .padding(.horizontal, 8)
     }
 
     private var actionButtonsAreaView: some View {
@@ -290,8 +293,21 @@ struct ContextInputView: View {
             Spacer() //
             if inputMode == .photos { //
                 if conversationImages.isEmpty { //
-                    PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 5, matching: .images) { photosPickerStyle } //
-                    .onChange(of: selectedPhotos) { _, newItems in photoSubmissionError = nil; photosSubmittedSuccessfully = false; loadSelectedImages(from: newItems) } //
+                    PhotosPicker(
+                        selection: $selectedPhotos,
+                        maxSelectionCount: 5,
+                        matching: .images
+                    ) {
+                        photosPickerStyle
+                    }
+                    //.padding(.horizontal, 2) //
+                        .onChange(of: selectedPhotos) {
+                            _,
+                            newItems in photoSubmissionError = nil; photosSubmittedSuccessfully = false; loadSelectedImages(
+                                from: newItems
+                            )
+                        }
+                        //.padding(.horizontal, 12) //
                     .disabled(isSubmittingPhotos).transition(.opacity) //
                 } else {
                     Button(action: submitPhotosForOCR) { //
@@ -300,10 +316,11 @@ struct ContextInputView: View {
                             Image(systemName: photosSubmittedSuccessfully ? "checkmark.circle.fill" : "arrow.up.doc.on.clipboard") //
                             Text(photosSubmittedSuccessfully ? "pics sent" : (isSubmittingPhotos ? "..." : "send pics")).font(.caption).lineLimit(1) //
                         }
-                        .padding(.horizontal, 12).padding(.vertical, 10) //
+                        .padding(.horizontal, 5).padding(.vertical, 10) //
                         .background(Capsule().fill(photosSubmittedSuccessfully ? Color.green.opacity(0.7) : Color.accent1.opacity(0.8))).foregroundColor(.white) //
                         .shadow(color: .black.opacity(0.2), radius: 2, x: 1, y: 1) //
                     }
+                    .padding(.bottom, 10)
                     .disabled(isSubmittingPhotos || photosSubmittedSuccessfully).transition(.opacity) //
                 }
             }

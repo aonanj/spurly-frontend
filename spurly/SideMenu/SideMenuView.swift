@@ -127,8 +127,8 @@ struct SideMenuView: View {
                     Image("SpurlySideMenuLogo") // Placeholder for your logo
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 65) // Adjust size as needed
-                        .padding(.bottom, 10)
+                        .frame(height: 70) // Adjust size as needed
+                        .padding(.bottom, 5)
                     Spacer()
                 }
 
@@ -149,7 +149,7 @@ struct SideMenuView: View {
                     .opacity(0.4)
                     .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
                 Text(authManager.userId ?? "guest") // Using userId, should be email/name
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 17, weight: .medium))
                     .italic() // Reduced size
                     .foregroundColor(.secondaryText) //
                     .lineLimit(1)
@@ -198,15 +198,34 @@ struct SideMenuView: View {
                 Divider().background(Color.bordersSeparators.opacity(0.5)) //
 
                 HStack {
-
                     Button(action: {
                         print("Help tapped")
                         // TODO: Implement help action
                         sideMenuManager.closeSideMenu()
                     }) {
+                        Image(systemName: "questionmark.circle.fill")
+                            .font(.system(size: 25)) // Adjusted icon size
+
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.highlight, .primaryText, .highlight],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: Color.black.opacity(0.5), radius: 5, x: 5, y: 5)
+                    }
+                    .padding(15)
+
+                    Spacer()
+
+                    Button(action: {
+                        print("About")
+                        // TODO: Implement about action
+                        sideMenuManager.closeSideMenu()
+                    }) {
                         Image(systemName: "info.circle.fill")
                             .font(.system(size: 25)) // Adjusted icon size
-                            .foregroundColor(.primaryButton)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [.highlight, .primaryText, .highlight],
@@ -226,7 +245,6 @@ struct SideMenuView: View {
                     }) {
                         Image(systemName: "figure.walk.departure")
                             .font(.system(size: 25)) // Adjusted icon size
-                            .foregroundColor(.primaryButton)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [.highlight, .primaryText, .highlight],
@@ -237,6 +255,7 @@ struct SideMenuView: View {
                             .shadow(color: Color.black.opacity(0.5), radius: 5, x: 5, y: 5)
                     }
                     .padding(15)
+
 
                 }
                 .frame(height: 55) // Fixed height for footer

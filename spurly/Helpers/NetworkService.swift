@@ -42,19 +42,19 @@ class NetworkService {
     private init() {}
 
     func createAccount(requestData: CreateAccountRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
-        let endpoint = baseApiURL.appendingPathComponent("/auth/register")
+        let endpoint = baseApiURL.appendingPathComponent("auth/register")
         performRequest(url: endpoint, method: "POST", body: requestData, completion: completion)
     }
 
     func login(requestData: LoginRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
-        let endpoint = baseApiURL.appendingPathComponent("/auth/login")
+        let endpoint = baseApiURL.appendingPathComponent("auth/login")
         performRequest(url: endpoint, method: "POST", body: requestData, completion: completion)
     }
 
     // NEW: Method to get user profile status
     func getUserProfile(userId: String, token: String, completion: @escaping (Result<UserProfileResponse, NetworkError>) -> Void) {
         // Adjust the endpoint path as per your backend API design
-        guard let url = URL(string: "\(baseApiURL)/profile/\(userId)") else {
+        guard let url = URL(string: "\(baseApiURL.absoluteString)/profile/\(userId)") else {
             completion(.failure(.badURL))
             return
         }
@@ -135,7 +135,7 @@ class NetworkService {
 
     func signInWithGoogleToken(idToken: String, serverAuthCode: String?, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         // Adjust the endpoint path as per your backend API design for Google Sign-In
-        let endpoint = baseApiURL.appendingPathComponent("/auth/google")
+        let endpoint = baseApiURL.appendingPathComponent("auth/google")
 
         let payload = GoogleTokenpayload(idToken: idToken, serverAuthCode: serverAuthCode)
 
@@ -238,11 +238,21 @@ class NetworkService {
         }
     }
 
-    struct APIErrorResponse: Codable, Error {
-        let message: String
-        let errorCode: String?
-        enum CodingKeys: String, CodingKey {
-            case message, errorCode = "error_code"
-        }
+    func submitOnboardingProfile(requestData: OnboardingRequest, authToken: String, completion: @escaping (Result<OnboardingResponse, NetworkError>) -> Void) {
+        let endpoint = baseApiURL.appendingPathComponent("onboarding")
+        performRequest(url: endpoint, method: "POST", body: requestData, authToken: authToken, completion: completion)
     }
 }
+
+
+struct OnboardingRequest: Codable {
+    let name: String
+    let age: Int // Date of birth as "YYYY-MM-DD"
+    let profileText: String
+
+    enum CodingKeys: String, CodingKey {
+        case name, age
+        case profileText = "profile_text"
+    }
+}
+

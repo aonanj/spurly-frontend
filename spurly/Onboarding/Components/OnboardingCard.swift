@@ -8,27 +8,31 @@
 import SwiftUI
 
 struct OnboardingCardView<Content: View>: View {
-    let title: String; let icon: Image; let content: Content
-    private let cardBackgroundColor = Color.spurlyCardBackground; private let cardOpacity: Double = 0.92
-    private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
-    init(title: String, icon: Image, @ViewBuilder content: () -> Content) { self.title = title; self.icon = icon; self.content = content() }
+
+    private var title = "about you"
+
+    let content: Content
+    private let cardBackgroundColor = Color.cardBg; private let cardOpacity: Double = 0.81
+    private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 20).weight(.heavy)
+    init(@ViewBuilder content: () -> Content) { self.content = content() }
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .center, spacing: 5) {
                 Spacer()
-                HStack(alignment: .center, spacing: 5) {
-                    icon
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(.spurlyPrimaryText)
-                    Text(title).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "person.text.rectangle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color.primaryText)
+                    Text(title)
+                        .font(cardTitleFont)
+                        .foregroundColor(Color.primaryText)
 
                 }
-                content.padding(.horizontal).opacity(1).padding(.vertical);
+                .padding(.top, 15)
+                .padding(.bottom, 10)
+                content.padding(.horizontal, 10).padding(.vertical, 5);
                 Spacer()
             }
-            .frame(maxWidth: .infinity)
             .background(cardBackgroundColor)
             .opacity(cardOpacity).cornerRadius(cardCornerRadius)
             .overlay(
@@ -37,8 +41,8 @@ struct OnboardingCardView<Content: View>: View {
                         LinearGradient(
                             gradient: Gradient(
                                 colors: [
-                                    Color.spurlyCardBackground.opacity(0.4),
-                                    Color.spurlyHighlight.opacity(0.8)
+                                    Color.cardBg.opacity(0.4),
+                                    Color.highlight.opacity(0.85)
                                 ]
                             ),
                             startPoint: .topLeading,
@@ -47,7 +51,9 @@ struct OnboardingCardView<Content: View>: View {
                         lineWidth: 12
                     )
                     .cornerRadius(cardCornerRadius)
-            );
+            )
         }
+        .scrollDismissesKeyboard(.interactively)
+        .ignoresSafeArea(.keyboard)
     }
 }

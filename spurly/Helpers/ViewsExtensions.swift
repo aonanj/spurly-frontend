@@ -56,12 +56,13 @@ extension Image {
     private static let _menuIcon = Image("MenuIcon")
     private static let _addConnection = Image("AddConnectionIcon")
     private static let _cancelAddConnectionIcon = Image("CancelAddConnectionIcon")
+    private static let _spurlyTaglineImage = Image("SpurlyTagLineImage")
 
     static var tappableBgIcon: some View {
         _spurlyBackgroundIcon
             .resizable()
             .scaledToFit()
-            .opacity(0.7)
+            .opacity(0.6)
             .allowsHitTesting(false) // Make sure it doesn't block taps
             .hideKeyboardOnTap()
     }
@@ -74,9 +75,8 @@ extension Image {
 
     static var menuIcon: some View {
         _menuIcon
-            .imageScale(.large)
-            .font(.title2)
             .foregroundColor(.primaryText)
+            .font(.system(size: 30))
             .shadow(
                 color: .primaryText.opacity(0.5),
                 radius: 5,
@@ -87,8 +87,8 @@ extension Image {
 
     static var connectionIcon: some View {
         _addConnection
-            .font(.title2)
             .foregroundColor(.primaryText)
+            .font(.system(size: 30))
             .shadow(
                 color: .primaryText.opacity(0.5),
                 radius: 5,
@@ -99,8 +99,7 @@ extension Image {
 
     static var cancelAddConnectionIcon: some View {
         _cancelAddConnectionIcon
-            .imageScale(.large)
-            .font(.title2)
+            .font(.system(size: 30))
             .foregroundColor(.primaryText)
             .shadow(
                 color: .primaryText.opacity(0.5),
@@ -108,6 +107,13 @@ extension Image {
                 x: 3,
                 y: 3
             )
+    }
+
+    static var taglineImage: some View {
+        _spurlyTaglineImage
+            .resizable()
+            .scaledToFit()
+            .shadow(color: .primaryText.opacity(0.5), radius: 4, x: 2, y: 4)
     }
 }
 
@@ -117,9 +123,10 @@ extension Text {
     static var bannerTag: some View {
         _bannerTagText
             .font(Font.custom("SF Pro Text", size: 16)
-            .weight(.bold))
+                .weight(.heavy))
+            .fontWeight(.bold)
             .foregroundColor(.brandColor)
-            .shadow(color: .black.opacity(0.55), radius: 4, x: 4, y: 4)
+            .shadow(color: .black.opacity(0.55), radius: 4, x: 2, y: 4)
     }
 }
 
