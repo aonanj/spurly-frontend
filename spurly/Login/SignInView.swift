@@ -6,14 +6,13 @@
 //
 
 import SwiftUI
-import AuthenticationServices // For Sign in with Apple
+import AuthenticationServices
 
 struct SignInView: View {
     @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var authManager: AuthManager // To observe auth changes
+    @EnvironmentObject var authManager: AuthManager
     @StateObject private var viewModel: AuthViewModel
 
-    // Initialize with the shared AuthManager
     init(authManager: AuthManager) {
         _viewModel = StateObject(wrappedValue: AuthViewModel(authManager: authManager))
     }
@@ -22,6 +21,7 @@ struct SignInView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Logo
                     Image("SpurlyBannerLoginLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -32,13 +32,16 @@ struct SignInView: View {
 
                     Spacer()
 
+                    // Error Message
                     if let errorMessage = viewModel.errorMessage {
                         Text(errorMessage)
                             .foregroundColor(.red)
                             .font(.caption)
+                            .padding(.horizontal)
                     }
 
-                    Group {
+                    // Email and Password Fields
+                    VStack(spacing: 15) {
                         TextField("email", text: $viewModel.email)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)
@@ -51,7 +54,7 @@ struct SignInView: View {
                             .shadow(color: Color.black.opacity(0.45), radius: 5, x: 5, y: 5)
 
                         SecureField("password", text: $viewModel.password)
-                            .textContentType(.password) // Use .password for existing passwords
+                            .textContentType(.password)
                             .frame(width: 250, height: 48)
                             .padding(.horizontal, 12)
                             .background(Color.secondaryBg)
@@ -61,7 +64,8 @@ struct SignInView: View {
                     }
 
                     Spacer()
-                    
+
+                    // Sign In Button
                     HStack {
                         Spacer()
                         Button(action: {
@@ -71,8 +75,8 @@ struct SignInView: View {
                                 Spacer()
                                 if viewModel.isLoading {
                                     ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 } else {
-
                                     Image("SpurlyLogoWhite")
                                         .resizable()
                                         .scaledToFit()
@@ -80,7 +84,7 @@ struct SignInView: View {
                                         .rotationEffect(.degrees(180))
 
                                     Text("sign in")
-
+                                        .foregroundColor(.white)
                                 }
                                 Spacer()
                             }
@@ -89,18 +93,20 @@ struct SignInView: View {
                         .disabled(!viewModel.isLoginFormValid || viewModel.isLoading)
                         .cornerRadius(10)
                         .shadow(color: Color.black.opacity(0.75), radius: 5, x: 5, y: 5)
-                        //.opacity((!viewModel.isLoginFormValid || viewModel.isLoading) ? 0.6 : 1.0)
                         Spacer()
                     }
-                    // Optionally, add a "Forgot Password?" link here
-                    Button("forgot password") { /* Navigate to forgot password screen */ }
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .shadow(color: Color.black.opacity(0.45), radius: 3, x: 2, y: 2)
-                        .padding(.vertical, 5)
 
+                    // Forgot Password
+                    Button("forgot password") {
+                        // Navigate to forgot password screen
+                    }
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .shadow(color: Color.black.opacity(0.45), radius: 3, x: 2, y: 2)
+                    .padding(.vertical, 5)
 
-                    HStack  {
+                    // Divider
+                    HStack {
                         Spacer()
                         Divider()
                             .frame(maxWidth: 100)
@@ -125,59 +131,68 @@ struct SignInView: View {
 
                     Spacer()
 
-                    HStack {
-                        Spacer()
-                        SocialSignInButton(
-                            title: "sign in with apple",
-                            image: Image(systemName: "applelogo"),
-                            background: .black,
-                            foreground: .white,
-                            action: viewModel.signInWithApple
-                        )
-                        Spacer()
-                    }.padding(.bottom, 5)
+                    // Social Sign In Buttons
+                    VStack(spacing: 10) {
+                        // Apple Sign In
+                        HStack {
+                            Spacer()
+                            SocialSignInButton(
+                                title: "sign in with apple",
+                                image: Image(systemName: "applelogo"),
+                                background: .black,
+                                foreground: .white,
+                                action: viewModel.signInWithApple,
+                                isLoading: viewModel.isLoading
+                            )
+                            Spacer()
+                        }
 
-                    HStack {
-                        Spacer()
-                        SocialSignInButton(
-                            title: "sign in with google",
-                            image: Image("GoogleSignInIcon"),
-                            background: .white,
-                            foreground: .blue,
-                            action: viewModel.signInWithGoogle
-                        )
-                        Spacer()
-                    }.padding(.vertical, 5)
+                        // Google Sign In
+                        HStack {
+                            Spacer()
+                            SocialSignInButton(
+                                title: "sign in with google",
+                                image: Image("GoogleSignInIcon"),
+                                background: .white,
+                                foreground: .blue,
+                                action: viewModel.signInWithGoogle,
+                                isLoading: viewModel.isLoading
+                            )
+                            Spacer()
+                        }
 
-                    HStack {
-                        Spacer()
-                        SocialSignInButton(
-                            title: "sign in with facebook",
-                            image: Image("FacebookSignInIcon"),
-                            background: Color(red: 0.25, green: 0.4, blue: 0.7),
-                            foreground: .white,
-                            action: viewModel.signInWithFacebook
-                        )
-                        Spacer()
-                    }.padding(.vertical, 5)
+                        // Facebook Sign In
+                        HStack {
+                            Spacer()
+                            SocialSignInButton(
+                                title: "sign in with facebook",
+                                image: Image("FacebookSignInIcon"),
+                                background: Color(red: 0.25, green: 0.4, blue: 0.7),
+                                foreground: .white,
+                                action: viewModel.signInWithFacebook,
+                                isLoading: viewModel.isLoading
+                            )
+                            Spacer()
+                        }
+                    }
 
                     Spacer()
 
-                } //End Main VStack
+                } // End Main VStack
                 .padding(.bottom, 10)
             } // End ScrollView
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(10)
-            .background(Color.primaryBg).edgesIgnoringSafeArea(.all)
+            .background(Color.primaryBg)
+            .edgesIgnoringSafeArea(.all)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         viewModel.clearInputs()
                         presentationMode.wrappedValue.dismiss()
-                        }
-                    )
-                    { Image(systemName: "x.circle.fill")
+                    }) {
+                        Image(systemName: "x.circle.fill")
                             .font(.title2)
                             .foregroundStyle(
                                 LinearGradient(
@@ -187,35 +202,78 @@ struct SignInView: View {
                                 )
                             )
                             .shadow(color: Color.black.opacity(0.5), radius: 5, x: 5, y: 5)
-
-
                     }
                 }
             }
-            .onReceive(authManager.$token) { newToken in // Observe the actual @Published property
-                let isAuthenticatedValue = (newToken != nil && !(newToken?.isEmpty ?? true))
-                // Rest of your logic:
-                if isAuthenticatedValue && presentationMode.wrappedValue.isPresented {
-                    print("SignInView: Auth state changed to authenticated (via token change), dismissing.")
+            .onReceive(authManager.$token) { token in
+                if token != nil && presentationMode.wrappedValue.isPresented {
+                    print("SignInView: User authenticated, dismissing view")
                     viewModel.clearInputs()
                     presentationMode.wrappedValue.dismiss()
                 }
             }
         }
-        // .alert("Login Successful", isPresented: $viewModel.showLoginSuccessAlert, actions: {
-        //     Button("OK", role: .cancel) {
-        //         presentationMode.wrappedValue.dismiss()
-        //     }
-        // }, message: {
-        //     Text("You are now logged in.")
-        // })
     }
 }
+
+// Updated Social Sign In Button with loading state
+struct SocialSignInButton: View {
+    let title: String
+    let image: Image
+    let background: Color
+    let foreground: Color
+    let action: () -> Void
+    let isLoading: Bool
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: foreground))
+                        .scaleEffect(0.8)
+                } else {
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                }
+                Text(title)
+                    .font(.system(size: 17))
+                    .fontWeight(.semibold)
+            }
+            .padding(.vertical, 2)
+            .frame(width: 225, height: 50)
+            .background(background)
+            .foregroundStyle(foreground)
+        }
+        .disabled(isLoading)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
+        )
+        .shadow(color: Color.black.opacity(0.75), radius: 5, x: 5, y: 5)
+    }
+}
+
+// Sign In Button Modifier
+//struct SignInButtonModifier: ViewModifier {
+//    func body(content: Content) -> some View {
+//        content
+//            .font(.body)
+//            .foregroundColor(.white)
+//            .padding(.vertical, 12)
+//            .padding(.horizontal, 24)
+//            .background(Color.accent1)
+//            .cornerRadius(8)
+//    }
+//}
 
 struct SignInView_Previews: PreviewProvider {
     static var previews: some View {
         let authManager = AuthManager()
         SignInView(authManager: authManager)
-            .environmentObject(authManager) // For onReceive
+            .environmentObject(authManager)
     }
 }

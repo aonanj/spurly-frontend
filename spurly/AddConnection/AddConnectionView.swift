@@ -31,7 +31,6 @@ struct AddConnectionView: View {
 
     @State private var connectionGreenlights: [String] = []
     @State private var connectionRedlights: [String] = []
-    @State private var allTopics: [String] = presetTopics
 
     @State private var connectionDrinking = ""
     @State private var connectionDatingPlatform = ""
@@ -227,17 +226,6 @@ struct AddConnectionView: View {
                                     )
                                 }
                             case 2:
-                                AddConnectionCardView(
-                                    title: "about connection",
-                                    icon: Image(.addConnectionAboutIcon)
-                                ) {
-                                    AddConnectionAboutCardContent(
-                                        connectionGreenlights: $connectionGreenlights,
-                                        connectionRedlights: $connectionRedlights,
-                                        allTopics: $allTopics
-                                    )
-                                }
-                            case 3:
                                 AddConnectionCardView(title: "connection lifestyle", icon: Image(.addConnectionLifestyleIcon)) {
                                     AddConnectionLifestyleCardContent(
                                         connectionDrinking: $connectionDrinking,

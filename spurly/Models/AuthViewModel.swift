@@ -12,6 +12,8 @@ import CryptoKit
 import GoogleSignIn
 import GoogleSignInSwift
 import Foundation
+import FacebookLogin
+import FirebaseAuth
 
 class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     // Input fields for Login & Create Account
@@ -48,7 +50,6 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
     }
 
     // MARK: - API Calls
-
     func createAccount() {
         guard isCreateAccountFormValid else {
             errorMessage = "Please fill all fields correctly. Password must be at least 8 characters and match the confirmation."
@@ -57,17 +58,69 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         isLoading = true
         errorMessage = nil
 
-        let request = CreateAccountRequest(email: email, password: password)
-        NetworkService.shared.createAccount(requestData: request) { [weak self] result in
+        // Create account with Firebase Auth
+        Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
-            self.isLoading = false
-            switch result {
-                case .success(let authResponse):
-                    print("Account created successfully: UserID \(authResponse.userId)")
-                    self.authManager.login(userId: authResponse.userId, token: authResponse.token)
-                    // self.showLoginSuccessAlert = true // Or trigger navigation
-                case .failure(let error):
-                    self.handleAuthError(error)
+
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.handleFirebaseAuthError(error)
+                }
+                return
+            }
+
+            guard let user = authResult?.user else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to create account. Please try again."
+                }
+                return
+            }
+
+            // Get the Firebase ID token
+            user.getIDToken { [weak self] idToken, error in
+                guard let self = self else { return }
+
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+                        self.errorMessage = "Failed to get authentication token: \(error.localizedDescription)"
+                    }
+                    return
+                }
+
+                guard let idToken = idToken else {
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+                        self.errorMessage = "Failed to get authentication token."
+                    }
+                    return
+                }
+
+                // Send the Firebase ID token to your backend
+                let request = CreateAccountRequest(firebaseIdToken: idToken, email: self.email)
+                NetworkService.shared.createAccountWithFirebase(requestData: request) { [weak self] result in
+                    guard let self = self else { return }
+
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+
+                        switch result {
+                        case .success(let authResponse):
+                            print("Account created successfully: UserID \(authResponse.user.id)")
+                                self.authManager
+                                    .login(authResponse: authResponse)
+
+                        case .failure(let error):
+                            // If backend fails, we might want to delete the Firebase user
+                            user.delete { _ in
+                                print("Deleted Firebase user after backend failure")
+                            }
+                            self.handleAuthError(error)
+                        }
+                    }
+                }
             }
         }
     }
@@ -80,19 +133,97 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         isLoading = true
         errorMessage = nil
 
-        let request = LoginRequest(email: email, password: password)
-        NetworkService.shared.login(requestData: request) { [weak self] result in
+        // Sign in with Firebase Auth
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
-            self.isLoading = false
-            switch result {
-                case .success(let authResponse):
-                    print("Login successful: UserID \(authResponse.userId)")
-                    self.authManager.login(userId: authResponse.userId, token: authResponse.token)
-                    // self.showLoginSuccessAlert = true // Or trigger navigation
-                case .failure(let error):
-                    self.handleAuthError(error)
+
+            if let error = error {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.handleFirebaseAuthError(error)
+                }
+                return
+            }
+
+            guard let user = authResult?.user else {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to sign in. Please try again."
+                }
+                return
+            }
+
+            // Get the Firebase ID token
+            user.getIDToken { [weak self] idToken, error in
+                guard let self = self else { return }
+
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+                        self.errorMessage = "Failed to get authentication token: \(error.localizedDescription)"
+                    }
+                    return
+                }
+
+                guard let idToken = idToken else {
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+                        self.errorMessage = "Failed to get authentication token."
+                    }
+                    return
+                }
+
+                // Send the Firebase ID token to your backend
+                let request = LoginRequest(firebaseIdToken: idToken, email: self.email)
+                NetworkService.shared.loginWithFirebase(requestData: request) { [weak self] result in
+                    guard let self = self else { return }
+
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+
+                        switch result {
+                        case .success(let authResponse):
+                            print("Login successful: UserID \(authResponse.user.id)")
+                            self.authManager.login(userId: authResponse.user.id, token: authResponse.accessToken)
+
+                        case .failure(let error):
+                            self.handleAuthError(error)
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private func handleFirebaseAuthError(_ error: Error) {
+        let nsError = error as NSError
+
+        if let errorCode = AuthErrorCode(rawValue: nsError.code) {
+            switch errorCode {
+            case .emailAlreadyInUse:
+                self.errorMessage = "This email is already registered. Please sign in instead."
+            case .invalidEmail:
+                self.errorMessage = "Please enter a valid email address."
+            case .weakPassword:
+                self.errorMessage = "Password is too weak. Please use at least 8 characters."
+            case .wrongPassword:
+                self.errorMessage = "Incorrect password. Please try again."
+            case .userNotFound:
+                self.errorMessage = "No account found with this email. Please create an account."
+            case .networkError:
+                self.errorMessage = "Network error. Please check your connection and try again."
+            case .tooManyRequests:
+                self.errorMessage = "Too many failed attempts. Please try again later."
+            case .userDisabled:
+                self.errorMessage = "This account has been disabled. Please contact support."
+            default:
+                self.errorMessage = "Authentication failed: \(error.localizedDescription)"
+            }
+        } else {
+            self.errorMessage = "Authentication failed: \(error.localizedDescription)"
+        }
+
+        print("Firebase Auth Error: \(self.errorMessage ?? "Unknown error")")
     }
 
     private func handleAuthError(_ error: NetworkError) {
@@ -133,74 +264,191 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         request.nonce = sha256(nonce) // The SHA256 hash of the nonce
     }
 
+        // Update the Apple Sign-In completion handler in AuthViewModel.swift
+
     func handleSignInWithAppleCompletion(_ result: Result<ASAuthorization, Error>) {
         isLoading = true
         errorMessage = nil
+
         switch result {
-            case .success(let auth):
-                if let appleIDCredential = auth.credential as? ASAuthorizationAppleIDCredential {
-                    guard let nonce = appleSignInNonce else {
-                        fatalError("Invalid state: A login callback was received, but no login nonce was stored.")
-                    }
-                    guard let appleIDToken = appleIDCredential.identityToken else {
-                        print("Unable to fetch identity token.")
-                        errorMessage = "Unable to fetch Apple ID token."
-                        isLoading = false
-                        return
-                    }
-                    guard let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
-                        print("Unable to serialize token string from data: \(appleIDToken.debugDescription)")
-                        errorMessage = "Unable to process Apple ID token."
-                        isLoading = false
-                        return
-                    }
-
-                    let userId = appleIDCredential.user // This is a stable user identifier.
-                    let email = appleIDCredential.email
-                    let fullName = appleIDCredential.fullName
-
-                    print("Apple Sign In Success: UserID - \(userId)")
-                    print("Apple Sign In Token: \(idTokenString)") // This token needs to be sent to your backend for validation
-
-                    // TODO: Send this idTokenString (and nonce, user identifier) to your backend
-                    // Your backend will verify the token with Apple's servers and then
-                    // create an account or log in the user, returning your app's own auth token.
-                    // Example:
-                    // let socialRequest = SocialLoginRequest(provider: "apple", idToken: idTokenString, /* other details */)
-                    // NetworkService.shared.socialLogin(requestData: socialRequest) { ... }
-
-                    // For now, let's simulate a successful login with a placeholder token
-                    // In a real app, you'd get the token from your backend response.
-                    // self.authManager.login(userId: userId, token: "fakeAppleBackendToken-\(idTokenString.prefix(10))")
-
-                    // This is where you would call your backend. For now, we'll set an error message.
-                    self.errorMessage = "Apple Sign-In successful! Backend integration needed to complete login with token: \(idTokenString.prefix(20))..."
-                    self.isLoading = false
-
-
-                } else if let passwordCredential = auth.credential as? ASPasswordCredential {
-                    // Sign in with Password (for existing iCloud Keychain users)
-                    let username = passwordCredential.user
-                    let password = passwordCredential.password
-                    print("Apple Sign In with Keychain: User - \(username)")
-                    // You can use this to pre-fill your app's own login form or directly attempt login
-                    // self.email = username
-                    // self.password = password
-                    // loginUser()
-                    self.errorMessage = "Apple Keychain credential received. Integrate with your login flow."
+        case .success(let auth):
+            if let appleIDCredential = auth.credential as? ASAuthorizationAppleIDCredential {
+                guard let nonce = appleSignInNonce else {
+                    errorMessage = "Invalid state: A login callback was received, but no login nonce was stored."
                     isLoading = false
+                    return
                 }
 
-            case .failure(let error):
-                print("Apple Sign In Error: \(error.localizedDescription)")
-                if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
-                    errorMessage = "Sign in with Apple was canceled."
-                } else {
-                    errorMessage = "Apple Sign In failed: \(error.localizedDescription)"
+                guard let identityToken = appleIDCredential.identityToken,
+                      let identityTokenString = String(data: identityToken, encoding: .utf8) else {
+                    errorMessage = "Unable to fetch Apple ID token."
+                    isLoading = false
+                    return
                 }
-                isLoading = false
+
+                guard let authorizationCode = appleIDCredential.authorizationCode,
+                      let authCodeString = String(data: authorizationCode, encoding: .utf8) else {
+                    errorMessage = "Unable to fetch authorization code."
+                    isLoading = false
+                    return
+                }
+
+                let email = appleIDCredential.email
+                let fullName = appleIDCredential.fullName
+
+                print("Apple Sign In Success - Sending to backend for validation")
+
+                // Send to backend for validation
+                NetworkService.shared.signInWithApple(
+                    identityToken: identityTokenString,
+                    authorizationCode: authCodeString,
+                    email: email,
+                    fullName: fullName
+                ) { [weak self] result in
+                    guard let self = self else { return }
+
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+
+                        switch result {
+                        case .success(let authResponse):
+                            print("AuthViewModel: Successfully validated Apple Sign-In with backend.")
+                            self.authManager.login(authResponse: authResponse)
+
+                        case .failure(let error):
+                            self.handleAuthError(error)
+                            print("AuthViewModel: Apple Sign-In backend validation failed: \(error.localizedDescription)")
+                        }
+                    }
+                }
+
+            } else if let passwordCredential = auth.credential as? ASPasswordCredential {
+                // Sign in with Password (for existing iCloud Keychain users)
+                let username = passwordCredential.user
+                let password = passwordCredential.password
+                print("Apple Sign In with Keychain: User - \(username)")
+
+                // Auto-fill and attempt login
+                self.email = username
+                self.password = password
+                self.loginUser()
+            }
+
+        case .failure(let error):
+            print("Apple Sign In Error: \(error.localizedDescription)")
+            if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
+                errorMessage = "Sign in with Apple was canceled."
+            } else {
+                errorMessage = "Apple Sign In failed: \(error.localizedDescription)"
+            }
+            isLoading = false
         }
     }
+
+    // Update the Google Sign-In method to handle the new response structure
+    func signInWithGoogle() {
+        isLoading = true
+        errorMessage = nil
+
+        guard let presentingViewController = Utilities.shared.getTopViewController() else {
+            errorMessage = "Could not find a view controller to present Google Sign-In."
+            isLoading = false
+            return
+        }
+
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] signInResult, error in
+            guard let self = self else { return }
+
+            if let error = error {
+                self.errorMessage = "Google Sign-In failed: \(error.localizedDescription)"
+                self.isLoading = false
+                return
+            }
+
+            guard let result = signInResult,
+                  let idToken = result.user.idToken?.tokenString else {
+                self.errorMessage = "Google Sign-In failed: Could not retrieve ID token."
+                self.isLoading = false
+                return
+            }
+
+            let serverAuthCode = result.serverAuthCode
+
+            print("Google Sign-In successful - Sending to backend for validation")
+
+            // Send to backend for validation
+            NetworkService.shared.signInWithGoogle(idToken: idToken, serverAuthCode: serverAuthCode) { [weak self] backendResult in
+                guard let self = self else { return }
+
+                DispatchQueue.main.async {
+                    self.isLoading = false
+
+                    switch backendResult {
+                    case .success(let authResponse):
+                        print("AuthViewModel: Successfully validated Google Sign-In with backend.")
+                        self.authManager.login(authResponse: authResponse)
+
+                    case .failure(let backendError):
+                        self.handleAuthError(backendError)
+                    }
+                }
+            }
+        }
+    }
+
+    // Implement Facebook Sign-In
+    func signInWithFacebook() {
+        isLoading = true
+        errorMessage = nil
+
+        // Import FacebookLogin framework
+        // import FacebookLogin
+
+        let loginManager = LoginManager()
+
+        guard let presentingViewController = Utilities.shared.getTopViewController() else {
+            errorMessage = "Could not find a view controller to present Facebook Sign-In."
+            isLoading = false
+            return
+        }
+
+        loginManager.logIn(permissions: ["public_profile", "email"], from: presentingViewController) { [weak self] result, error in
+            guard let self = self else { return }
+
+            if let error = error {
+                self.errorMessage = "Facebook Sign-In failed: \(error.localizedDescription)"
+                self.isLoading = false
+                return
+            }
+
+            guard let result = result, !result.isCancelled,
+                  let accessToken = AccessToken.current?.tokenString else {
+                self.errorMessage = result?.isCancelled == true ? "Facebook Sign-In was canceled." : "Failed to get Facebook access token."
+                self.isLoading = false
+                return
+            }
+
+            print("Facebook Sign-In successful - Sending to backend for validation")
+
+            NetworkService.shared.signInWithFacebook(accessToken: accessToken) { [weak self] backendResult in
+                guard let self = self else { return }
+
+                DispatchQueue.main.async {
+                    self.isLoading = false
+
+                    switch backendResult {
+                    case .success(let authResponse):
+                        print("AuthViewModel: Successfully validated Facebook Sign-In with backend.")
+                        self.authManager.login(authResponse: authResponse)
+
+                    case .failure(let backendError):
+                        self.handleAuthError(backendError)
+                    }
+                }
+            }
+        }
+    }
+
 
     // MARK: - ASAuthorizationControllerDelegate Methods
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
@@ -278,78 +526,10 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
     }
 
     // MARK: - Google Sign In
-    func signInWithGoogle() {
-        isLoading = true
-        errorMessage = nil
 
-        // Get the top view controller to present the sign-in flow.
-        guard let presentingViewController = Utilities.shared.getTopViewController() else {
-            errorMessage = "Could not find a view controller to present Google Sign-In."
-            isLoading = false
-            print("AuthViewModel: No top view controller found for Google Sign-In.")
-            return
-        }
-
-        GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { [weak self] signInResult, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                self.errorMessage = "Google Sign-In failed: \(error.localizedDescription)"
-                self.isLoading = false
-                print("AuthViewModel: Google Sign-In error: \(error.localizedDescription)")
-                return
-            }
-
-            guard let result = signInResult else {
-                self.errorMessage = "Google Sign-In failed: No result."
-                self.isLoading = false
-                print("AuthViewModel: Google Sign-In error: No result.")
-                return
-            }
-
-            guard let idToken = result.user.idToken?.tokenString else {
-                self.errorMessage = "Google Sign-In failed: Could not retrieve ID token."
-                self.isLoading = false
-                print("AuthViewModel: Google Sign-In error: Missing ID token.")
-                return
-            }
-
-            let serverAuthCode = result.serverAuthCode // Optional: if your backend needs it for offline access
-
-            print("Google Sign-In successful. ID Token retrieved. User: \(result.user.profile?.email ?? "N/A")")
-
-            // Now, send this idToken (and serverAuthCode if needed) to your backend
-            // to exchange it for your app's own authentication token.
-            NetworkService.shared.signInWithGoogleToken(idToken: idToken, serverAuthCode: serverAuthCode) { backendResult in
-                self.isLoading = false
-                switch backendResult {
-                    case .success(let authResponse):
-                        print("AuthViewModel: Successfully exchanged Google token with backend.")
-                        // AuthManager's login will trigger profile fetch
-                        self.authManager.login(userId: authResponse.userId, token: authResponse.token)
-                    case .failure(let backendError):
-                        self.handleAuthError(backendError) // Use existing error handler
-                        print("AuthViewModel: Backend token exchange failed: \(backendError.localizedDescription)")
-                }
-            }
-        }
-    }
 
     // Placeholder for Facebook Sign In
-    func signInWithFacebook() {
-        isLoading = true
-        errorMessage = nil
-        // TODO: Implement Facebook SDK logic
-        // 1. Initialize Facebook SDK (usually in AppDelegate)
-        // 2. Create a LoginManager instance
-        // 3. Call loginManager.logIn(...)
-        // 4. In the completion, get the accessToken and send to your backend
-        print("Attempting Facebook Sign In (Not Implemented)")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { // Simulate delay
-            self.isLoading = false
-            self.errorMessage = "Facebook Sign-In is not yet implemented. SDK integration required."
-        }
-    }
+
 
     func clearInputs() {
         email = ""

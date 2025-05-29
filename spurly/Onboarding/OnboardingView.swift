@@ -3,16 +3,15 @@ import UIKit
 
 struct OnboardingView: View {
     @EnvironmentObject var authManager: AuthManager
+    @StateObject private var viewModel: OnboardingViewModel
 
     @State private var showAgeError = false
-    @State private var isLoading = false
     @State private var age: Int? = nil
     @State private var showSuccessOverlay = false
     @State private var successMessage = ""
     @State private var errorMessageTitle = ""
     @State private var showErrorOverlay = false
     @State private var errorMessage = ""
-    @State private var isSubmitting = false
     @State private var name: String = "what do you go by"
     @State private var textEditorText: String = "... spurly can keep things relevant to you. here you can add your interests, job, hometown, relationship type, and anything else that could help spurly help you find your own words quicker ..."
 
@@ -20,8 +19,7 @@ struct OnboardingView: View {
     let textEditorDefault = "... spurly can keep things relevant to you. here you can add your interests, job, hometown, relationship type, and anything else that could help spurly help you find your own words quicker ..."
 
     var isAgeValidForSubmission: Bool {
-        guard let currentAge = age
-        else { return false }
+        guard let currentAge = age else { return false }
         return currentAge >= 18
     }
 
@@ -29,6 +27,10 @@ struct OnboardingView: View {
     let screenWidth = UIScreen.main.bounds.width
     let cardWidthMultiplier: CGFloat = 0.85
     let cardHeightMultiplier: CGFloat = 0.62
+
+    init(authManager: AuthManager) {
+        _viewModel = StateObject(wrappedValue: OnboardingViewModel(authManager: authManager))
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -38,13 +40,14 @@ struct OnboardingView: View {
                         hideKeyboard()
                     }
                     .zIndex(0)
+
                 Image.tappableBgIcon
                     .frame(width: screenWidth * 1.8, height: screenHeight * 1.8)
                     .position(x: screenWidth / 2, y: screenHeight * 0.49)
                     .zIndex(1)
 
                 VStack(spacing: 0) {
-
+                    // Header
                     VStack(alignment: .center, spacing: 0) {
                         Image.bannerLogo
                             .frame(height: screenHeight * 0.1)
@@ -54,14 +57,12 @@ struct OnboardingView: View {
                             .padding(.horizontal)
                     }
                     .frame(height: geometry.size.height * 0.14)
-                    .padding(
-                        .top,
-                        geometry.safeAreaInsets.top > 30 ? 25 : geometry.safeAreaInsets.top)
+                    .padding(.top, geometry.safeAreaInsets.top > 30 ? 25 : geometry.safeAreaInsets.top)
                     .padding(.bottom, 20)
-
 
                     Spacer()
 
+                    // Main Card
                     OnboardingCardView {
                         UserCardContent(
                             name: $name,
@@ -73,51 +74,29 @@ struct OnboardingView: View {
                         )
                     }
                     .frame(
-                        width: geometry
-                            .size.width * cardWidthMultiplier, height: geometry.size.height * cardHeightMultiplier)
+                        width: geometry.size.width * cardWidthMultiplier,
+                        height: geometry.size.height * cardHeightMultiplier
+                    )
                     .padding(.top, 30)
 
-                    HStack() {
+                    // Submit Button
+                    HStack {
                         Spacer()
-                        Button(action: {
-                            if !isAgeValidForSubmission {
-                                showAgeError = true
-                                self.errorMessageTitle = "minimum age requirement"
-                                self.errorMessage = "you must be at least 18 to use spurly"
-                                showErrorOverlay = true
-                            }
-                            else {
-                                showAgeError = false
-                                self.errorMessageTitle = ""
-                                self.errorMessage = ""
-                                showErrorOverlay = false
-                                submit()
-                            }
-                        }) { Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 45)) // Adjust size as needed
-                                .if(isAgeValidForSubmission) { view in
-                                    view.foregroundStyle(
-                                        LinearGradient(
-                                            colors: [
-                                                .highlight,
-                                                .primaryButton,
-                                                .highlight
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .shadow(
-                                        color: .spurlyPrimaryText.opacity(0.44),
-                                        radius: 4,
-                                        x: 2,
-                                        y: 5
-                                    )
-                                }
-                                .if(!isAgeValidForSubmission) { view in
-                                    view
-                                        .foregroundColor(
-                                            .spurlySecondaryText.opacity(0.2)
+                        Button(action: submit) {
+                            if viewModel.isLoading {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .primaryButton))
+                                    .scaleEffect(1.2)
+                            } else {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 45))
+                                    .if(isAgeValidForSubmission) { view in
+                                        view.foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.highlight, .primaryButton, .highlight],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
                                         )
                                         .shadow(
                                             color: .spurlyPrimaryText.opacity(0.44),
@@ -125,9 +104,20 @@ struct OnboardingView: View {
                                             x: 2,
                                             y: 5
                                         )
-
-                                }
+                                    }
+                                    .if(!isAgeValidForSubmission) { view in
+                                        view
+                                            .foregroundColor(.spurlySecondaryText.opacity(0.2))
+                                            .shadow(
+                                                color: .spurlyPrimaryText.opacity(0.44),
+                                                radius: 4,
+                                                x: 2,
+                                                y: 5
+                                            )
+                                    }
+                            }
                         }
+                        .disabled(viewModel.isLoading)
                         .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 30)
@@ -135,6 +125,7 @@ struct OnboardingView: View {
 
                     Spacer()
 
+                    // Privacy Notice
                     VStack(spacing: 2) {
                         Text("we care about protecting your data")
                             .font(.footnote)
@@ -168,289 +159,295 @@ struct OnboardingView: View {
                 .ignoresSafeArea(.keyboard)
                 .zIndex(2)
 
+                // Success Overlay
                 if showSuccessOverlay {
-                    Color.primaryText.opacity(0.5)
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-                        .onTapGesture {
-                            showSuccessOverlay = false
-                        }
-                        .zIndex(3)
-                    // Message Box
-                    VStack {
-                        Spacer()
-                        Text(successMessage)
-                            .font(.headline)
-                            .foregroundColor(.primaryText)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.cardBg)
-                                    .shadow(
-                                        color: Color.accent1.opacity(0.7),
-                                        radius: 8,
-                                        x: 0,
-                                        y: 4
-                                    )
-                            )
-                            .padding(.horizontal, 40)
-                        Spacer()
-                    }
-                    .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            showSuccessOverlay = false
-                        }
-                    }
-                    .zIndex(4)
+                    successOverlay
                 }
 
+                // Error Overlay
                 if showErrorOverlay {
-                    // Dimmed background - Tappable to dismiss
-                    Color.black.opacity(0.5)
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-                        .onTapGesture {
-                            showErrorOverlay = false // Dismiss on tap
-                        }.zIndex(3)
-
-                    // Error Message Box
-                    VStack { // Use a new VStack for the error message
-                        Spacer() // Push to center vertically
-                        VStack(spacing: 12) { // Inner VStack for content spacing
-                            Image(systemName: "exclamationmark.triangle.fill") // Error Icon
-                                .font(.system(size: 30)) // Make icon larger
-                                .foregroundColor(.red)
-
-                            Text(errorMessageTitle) // Clear Title
-                                .font(.headline)
-                                .foregroundColor(.primaryText)
-
-                            Divider()
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 2)
-                                .background(Color.accent1)
-                                .padding(.horizontal, 15)
-                                .opacity(0.4)
-                                .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
-
-                            Text(errorMessage) // The specific error message from state
-                                .font(.footnote) // Use footnote size for potentially longer messages
-                                .foregroundColor(.secondaryText)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal) // Add padding if message is long
-
-                            // Explicit Dismiss Button
-                            Button("dismiss") {
-                                showErrorOverlay = false
-                                showAgeError = false
-                            }
-                            .font(.body)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(Color.red.opacity(0.6)) // Match icon color
-                            .foregroundColor(.white)
-                            .clipShape(Capsule()) // Use capsule shape
-                            .padding(.top) // Add space above button
-
-                        }
-                        .padding(EdgeInsets(top: 30, leading: 20, bottom: 20, trailing: 20)) // Adjust padding
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(
-                                    Color.cardBg
-                                ) // Can use same background as success
-                                .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 5)
-                        )
-                        .padding(.horizontal, 30) // Padding for the whole box horizontally
-                        Spacer() // Push to center vertically
-                    }
-                    .onTapGesture {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showSuccessOverlay = false
-                            showAgeError = false// Dismiss on tap
-                        }
-                    }
-                    .transition(.opacity.animation(.easeInOut(duration: 0.3))) // Fade transition
-                    .zIndex(4)
+                    errorOverlay
                 }
+
             } // End main ZStack
-            //.ignoresSafeArea(.container, edges: .bottom)
         } // End Geometry Reader
+        .onReceive(viewModel.$errorMessage) { error in
+            if let error = error {
+                self.errorMessageTitle = "Error"
+                self.errorMessage = error
+                self.showErrorOverlay = true
+            }
+        }
+        .onReceive(authManager.$userProfileExists) { profileExists in
+            if profileExists == true {
+                // Profile successfully created, navigation will be handled by parent view
+                print("OnboardingView: Profile created successfully")
+            }
+        }
     }
 
-    private func sendOnboardingData(completion: @escaping (Result<OnboardingResponse, Error>) -> Void) {
-        print("attempting to submit onboarding data...")
-        guard isAgeValidForSubmission else {
-            // Create a specific error for this case
-            let ageError = NSError(domain: "ValidationDomain", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Age is required and must be 18 or older."])
-            print("error: \(ageError.localizedDescription)")
-            completion(.failure(ageError)) // Call completion with validation error
-            return
-        }
+    // MARK: - View Components
 
-        let payload = OnboardingPayload(
-            name: name,
-            age: age,
-            profile_context: textEditorText
-        )
-
-        guard let encodedPayload = try? JSONEncoder().encode(payload) else {
-            let encodingError = NSError(domain: "EncodingDomain", code: 1002, userInfo: [NSLocalizedDescriptionKey: "Failed to encode payload."])
-            print("error: \(encodingError.localizedDescription)")
-            completion(.failure(encodingError)) // Call completion with encoding error
-            return
-        }
-
-        // Print payload for debugging
-        if let jsonString = String(data: encodedPayload, encoding: .utf8) { print("Sending JSON payload: \(jsonString)") } else { print("Could not convert encoded payload data to UTF8 string for printing.") }
-
-        // --- Replace with your actual backend URL ---
-        guard let url = URL(string: "YOUR_BACKEND_ENDPOINT_HERE") else { // <-- IMPORTANT: Use your real URL
-            let urlError = NSError(domain: "URLDomain", code: 1003, userInfo: [NSLocalizedDescriptionKey: "Invalid URL."])
-            print("error: \(urlError.localizedDescription)")
-            completion(.failure(urlError)) // Call completion with URL error
-            return
-        }
-        // --- ---
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = encodedPayload
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            // Ensure completion handler is called on the main thread for UI updates
-            DispatchQueue.main.async {
-                if let networkError = error {
-                    print("Network Error: \(networkError.localizedDescription)")
-                    completion(.failure(networkError)) // Call completion with network error
-                    return
+    private var successOverlay: some View {
+        ZStack {
+            Color.primaryText.opacity(0.5)
+                .ignoresSafeArea()
+                .transition(.opacity)
+                .onTapGesture {
+                    showSuccessOverlay = false
                 }
+                .zIndex(3)
 
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    let responseError = NSError(domain: "HTTPDomain", code: 1004, userInfo: [NSLocalizedDescriptionKey: "Invalid HTTP response."])
-                    print("error: \(responseError.localizedDescription)")
-                    completion(.failure(responseError)) // Call completion with response error
-                    return
-                }
+            VStack {
+                Spacer()
 
-                print("Received HTTP Status: \(httpResponse.statusCode)")
+                Image(systemName: "staroflife.fill")
+                    .font(.system(size: 35))
+                    .foregroundColor(.spurlyBrand)
+                    .shadow(color: Color.accent1.opacity(0.7),
+                            radius: 8,
+                            x: 0,
+                            y: 4)
 
-                guard (200...299).contains(httpResponse.statusCode) else {
-                    var errorUserInfo: [String: Any] = [NSLocalizedDescriptionKey: "Server returned status code \(httpResponse.statusCode)"]
-                    if let responseData = data, let errorString = String(data: responseData, encoding: .utf8) {
-                        print("Server Error Response: \(errorString)")
-                        errorUserInfo[NSLocalizedFailureReasonErrorKey] = errorString // Optionally add server message
-                    }
-                    let serverError = NSError(domain: "HTTPError", code: httpResponse.statusCode, userInfo: errorUserInfo)
-                    completion(.failure(serverError)) // Call completion with server error
-                    return
-                }
+                Spacer()
 
-                guard let responseData = data else {
-                    let dataError = NSError(domain: "DataDomain", code: 1005, userInfo: [NSLocalizedDescriptionKey: "No data received."])
-                    print("error: \(dataError.localizedDescription)")
-                    completion(.failure(dataError)) // Call completion with data error
-                    return
-                }
+                Divider()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 2)
+                    .background(Color.accent1)
+                    .padding(.horizontal, 15)
+                    .opacity(0.4)
+                    .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
 
-                do {
-                    let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData)
-                    print("Success! User ID: \(decodedResponse.user_id), Token: \(decodedResponse.token)")
-                    do {
-                        let decodedResponse = try JSONDecoder().decode(OnboardingResponse.self, from: responseData)
-                        print("Success! User ID: \(decodedResponse.user_id), Token received.")
-                        completion(.success(decodedResponse)) // Call completion with SUCCESS
-                    } catch let decodingError {
-                        print("error: Failed to decode response: \(decodingError)")
-                        completion(.failure(decodingError)) // Call completion with decoding error
-                    }
-                    completion(.success(decodedResponse)) // Call completion with SUCCESS
-                } catch let decodingError {
-                    print("error: Failed to decode response: \(decodingError)")
-                    completion(.failure(decodingError)) // Call completion with decoding error
+                Text(successMessage)
+                    .font(.headline)
+                    .foregroundColor(.primaryText)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.cardBg)
+                            .shadow(
+                                color: Color.accent1.opacity(0.7),
+                                radius: 8,
+                                x: 2,
+                                y: 4
+                            )
+                    )
+                    .padding(.horizontal, 40)
+                Spacer()
+            }
+            .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    showSuccessOverlay = false
                 }
             }
-        }.resume()
+            .zIndex(4)
+        }.zIndex(4)
     }
+
+    private var errorOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+                .transition(.opacity)
+                .onTapGesture {
+                    showErrorOverlay = false
+                }
+                .zIndex(3)
+
+            VStack {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.red)
+                        .shadow(color: Color.accent1.opacity(0.7),
+                                radius: 8,
+                                x: 0,
+                                y: 4)
+
+                    Text(errorMessageTitle)
+                        .font(.headline)
+                        .foregroundColor(.primaryText)
+
+                    Divider()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 2)
+                        .background(Color.accent1)
+                        .padding(.horizontal, 15)
+                        .opacity(0.4)
+                        .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
+
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundColor(.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    Button("dismiss") {
+                        showErrorOverlay = false
+                        showAgeError = false
+                        viewModel.clearError()
+                    }
+                    .font(.body)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color.red.opacity(0.6))
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+                    .padding(.top)
+                }
+                .padding(EdgeInsets(top: 30, leading: 20, bottom: 20, trailing: 20))
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color.cardBg)
+                        .shadow(color: .black.opacity(0.8), radius: 10, x: 2, y: 5)
+                )
+                .padding(.horizontal, 30)
+                Spacer()
+            }
+            .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+            .zIndex(4)
+        }.zIndex(4)
+    }
+
+    // MARK: - Methods
 
     private func submit() {
         hideKeyboard()
+
         guard isAgeValidForSubmission else {
-            print("Submit cancelled: age validation failed.")
             showAgeError = true
+            errorMessageTitle = "minimum age requirement"
+            errorMessage = "you must be at least 18 to use spurly"
+            showErrorOverlay = true
             return
         }
+
         showAgeError = false
 
-        // Optional: Add a state variable @State private var isSubmitting = false
-        // and set isSubmitting = true here to show a loading indicator
+        // Validate inputs
+        let finalName = name.isEmpty ? nameDefault : name
+        let finalContext = textEditorText.isEmpty ? textEditorDefault : textEditorText
 
-        print("Submitting onboarding data...")
-        isSubmitting = true // Show loading indicator
+        let payload = OnboardingPayload(
+            name: finalName,
+            age: age,
+            profile_context: finalContext
+        )
 
-
-        sendOnboardingData { [self] result in // Use [self] to capture self
-            isSubmitting = false // Hide loading indicator
-
-            switch result {
-            case .success(let onboardingResponse):
-                // --- SUCCESS CASE ---
-                // Network call succeeded! Show message and schedule navigation.
-                print("Onboarding data submission successful.")
-                authManager.login(userId: onboardingResponse.user_id, token: onboardingResponse.token)
-
-                let displayName = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "User" : name
-                    self.successMessage = "hi \(displayName)! your account with spurly has been successfully created."
-                self.showSuccessOverlay = true // Show success message overlay NOW
-
-            case .failure(let error):
-                print("Onboarding data submission failed: \(error.localizedDescription)")
+        // Submit through viewModel
+        viewModel.submitOnboarding(data: payload) { success, error in
+            if success {
+                let displayName = finalName == nameDefault ? "User" : finalName
+                self.successMessage = "welcome to spurly, \(displayName)"
+                self.showSuccessOverlay = true
+            } else if let error = error {
                 self.errorMessageTitle = "Error"
-                self.errorMessage = "Account creation failed. Please check connection and try again.\n(\(error.localizedDescription))"
+                self.errorMessage = error
                 self.showErrorOverlay = true
-
             }
         }
     }
 
-    private func hideKeyboard() { //
+    private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
-struct OnboardingView_Previews: PreviewProvider {
-    static var previews: some View {
-        OnboardingView().environmentObject(AuthViewModel(authManager: AuthManager()))
+// MARK: - View Model
+
+class OnboardingViewModel: ObservableObject {
+    @Published var isLoading = false
+    @Published var errorMessage: String? = nil
+
+    private let authManager: AuthManager
+
+    init(authManager: AuthManager) {
+        self.authManager = authManager
+    }
+
+    func submitOnboarding(data: OnboardingPayload, completion: @escaping (Bool, String?) -> Void) {
+        guard let token = authManager.token, let userId = authManager.userId else {
+            completion(false, "User is not authenticated. Cannot complete onboarding.")
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        let requestData = OnboardingRequest(
+            name: data.name ?? "",
+            age: data.age ?? 0,
+            profileText: data.profile_context ?? ""
+        )
+
+        NetworkService.shared.submitOnboardingProfile(requestData: requestData, authToken: token) { [weak self] result in
+            guard let self = self else { return }
+
+            DispatchQueue.main.async {
+                self.isLoading = false
+
+                switch result {
+                case .success(_):
+                    // Re-fetch profile to update userProfileExists
+                    self.authManager.fetchUserProfile(userId: userId, token: token)
+                    completion(true, nil)
+
+                case .failure(let error):
+                    let errorMessage: String
+                    switch error {
+                    case .serverError(let message, _):
+                        errorMessage = message
+                    case .unauthorized:
+                        errorMessage = "Session expired. Please log in again."
+                    case .requestFailed:
+                        errorMessage = "Network error. Please check your connection."
+                    default:
+                        errorMessage = "Failed to save your profile. Please try again."
+                    }
+
+                    self.errorMessage = errorMessage
+                    completion(false, errorMessage)
+                }
+            }
+        }
+    }
+
+    func clearError() {
+        errorMessage = nil
     }
 }
 
+// MARK: - Supporting Types
 
-// You'll need a way to navigate to ContextInputView when the state changes.
-// Your main view (often named ContentView or something similar) would look like this:
+struct OnboardingPayload: Codable {
+    let name: String?
+    let age: Int?
+    let profile_context: String?
+}
 
-/*
- In your main app view (e.g., spurlyApp.swift or a ContentView):
+// MARK: - View Extension
 
- struct ContentView: View {
-     @StateObject private var authViewModel = AuthViewModel(authManager: AuthManager())
+extension View {
 
-     var body: some View {
-         Group {
-             switch authViewModel.userState {
-             case .unauthenticated, .unknown:
-                 LoginLandingView()
-             case .authenticated:
-                 OnboardingView() // Show this if user is logged in but not yet onboarded
-             case .onboarded:
-                 ContextInputView() // Navigate here after successful onboarding
-             case .error(let message):
-                 Text("Error: \(message)") // Or an error view
-             }
-         }
-         .environmentObject(authViewModel)
-     }
- }
-*/
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            return AnyView(transform(self))
+        } else {
+            return AnyView(self)
+        }
+    }
+}
+
+// MARK: - Preview
+
+struct OnboardingView_Previews: PreviewProvider {
+    static var previews: some View {
+        let authManager = AuthManager()
+        OnboardingView(authManager: authManager)
+            .environmentObject(authManager)
+    }
+}

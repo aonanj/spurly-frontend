@@ -8,16 +8,16 @@
 import SwiftUI
 
 // MARK: - Onboarding Data Structure
-struct OnboardingPayload: Codable {
-    var name: String?; var age: Int?; var profile_context: String?;
-    enum CodingKeys: String, CodingKey { case name, age, profile_context}
-    init(name: String?, age: Int?, profile_context: String?) {
-        self.name = name?.isEmpty ?? true ? nil : name; self.age = age; self.profile_context = profile_context?.isEmpty ?? true ? nil : profile_context;
-    }
-}
+//struct OnboardingPayload: Codable {
+//    var name: String?; var age: Int?; var profile_context: String?;
+//    enum CodingKeys: String, CodingKey { case name, age, profile_context}
+//    init(name: String?, age: Int?, profile_context: String?) {
+//        self.name = name?.isEmpty ?? true ? nil : name; self.age = age; self.profile_context = profile_context?.isEmpty ?? true ? nil : profile_context;
+//    }
+//}
 
 
-struct OnboardingResponse: Codable { var user_id: String; var token: String }
+//struct OnboardingResponse: Codable { var user_id: String; var token: String }
 
 // MARK: - Card & Field View Models
 // These structs can remain as they are, as we will use them to structure the single card's content.

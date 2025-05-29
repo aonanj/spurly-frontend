@@ -7,6 +7,22 @@
 
 import SwiftUI
 
+
+struct AngledDivider: View {
+    var angle: Angle = .degrees(45)
+    var color: Color = .gray
+    var width: CGFloat = 1
+    var length: CGFloat = 100
+
+    var body: some View {
+        Rectangle()
+            .fill(color)
+            .frame(width: length, height: width)
+            .rotationEffect(angle)
+    }
+}
+
+
 struct CustomTextFieldStyle: TextFieldStyle {
 
     let inputFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
@@ -182,25 +198,12 @@ struct OnboardingNextButtonModifier: ViewModifier {
 
 extension View {
 
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-
     func primaryButtonStyle() -> some View {
         self.modifier(PrimaryButtonModifier())
     }
 
     func secondaryButtonStyle() -> some View {
         self.modifier(SecondaryButtonModifier())
-    }
-
-    func socialButtonStyle(backgroundColor: Color, foregroundColor: Color) -> some View {
-        self.modifier(SocialButtonModifier(backgroundColor: backgroundColor, foregroundColor: foregroundColor))
     }
 
 }

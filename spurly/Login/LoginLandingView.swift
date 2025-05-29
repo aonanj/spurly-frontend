@@ -18,16 +18,16 @@ struct LoginLandingView: View {
                 ZStack {
                      DiagonalColorBlockBackgroundView(
                          colors: [
-                            Color.accent4,
+                            Color.secondaryText,
                             Color.secondaryButton,
                             Color.highlight,
-                            Color.accent4
+                            Color.secondaryText
                          ],
                          angle: .degrees(25)
-                     ).opacity(0.45)
+                     ).opacity(0.7)
+                        .zIndex(0)
                     // For simplicity, using a solid color if the diagonal view isn't set up yet
                    //  Color("SpurlyPrimaryBackground").edgesIgnoringSafeArea(.all) //
-
 
                     VStack(spacing: 20) {
                         Spacer()
@@ -144,6 +144,8 @@ struct LoginLandingView: View {
         // and the image assets "SpurlySignInButton", "SpurlySignUpButton", etc.
     }
 }
+
+
 
 struct LoginLandingView_Previews: PreviewProvider {
     static var previews: some View {

@@ -10,6 +10,16 @@
 				<string>REVERSED_CLIENT_ID</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>OAuth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.280376325694-ahn962qlgh9pr9p92gpq4uclbhuq1e41</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>
