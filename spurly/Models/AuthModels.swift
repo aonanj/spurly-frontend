@@ -158,11 +158,11 @@ struct FacebookTokenPayload: Codable {
 struct OnboardingRequest: Codable {
     let name: String
     let age: Int
-    let profileText: String
+    let userContextBlock: String
 
     enum CodingKeys: String, CodingKey {
         case name, age
-        case profileText = "profile_text"
+        case userContextBlock = "profile_text"
     }
 }
 

@@ -580,7 +580,7 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         let requestData = OnboardingRequest(
             name: data.name ?? "",
             age: data.age ?? 0,
-            profileText: data.profile_context ?? ""
+            userContextBlock: data.user_context_block ?? ""
         )
 
         // 3. Use the NetworkService to submit the profile

@@ -120,7 +120,7 @@ struct OnboardingView: View {
                         .disabled(viewModel.isLoading)
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal, geometry.size.width * ((1.0 - cardWidthMultiplier) / 2.0))
                     .padding(.bottom, 5)
 
                     Spacer()
@@ -152,7 +152,7 @@ struct OnboardingView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
+                    .padding(.bottom, (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0) + 10)
 
                 } // End main VStack
                 .navigationBarHidden(true)
@@ -330,12 +330,12 @@ struct OnboardingView: View {
 
         // Validate inputs
         let finalName = name.isEmpty ? nameDefault : name
-        let finalContext = textEditorText.isEmpty ? textEditorDefault : textEditorText
+        let userContextBlock = textEditorText.isEmpty ? textEditorDefault : textEditorText
 
         let payload = OnboardingPayload(
             name: finalName,
             age: age,
-            profile_context: finalContext
+            user_context_block: userContextBlock
         )
 
         // Submit through viewModel
@@ -381,7 +381,7 @@ class OnboardingViewModel: ObservableObject {
         let requestData = OnboardingRequest(
             name: data.name ?? "",
             age: data.age ?? 0,
-            profileText: data.profile_context ?? ""
+            userContextBlock: data.user_context_block ?? ""
         )
 
         NetworkService.shared.submitOnboardingProfile(requestData: requestData, authToken: token) { [weak self] result in
@@ -426,7 +426,7 @@ class OnboardingViewModel: ObservableObject {
 struct OnboardingPayload: Codable {
     let name: String?
     let age: Int?
-    let profile_context: String?
+    let user_context_block: String?
 }
 
 // MARK: - View Extension

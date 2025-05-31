@@ -5,6 +5,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct AddConnectionView: View {
     // MARK: - Environment Objects
@@ -12,30 +13,21 @@ struct AddConnectionView: View {
     @EnvironmentObject var connectionManager: ConnectionManager
     @EnvironmentObject var authManager: AuthManager
 
+    @State var connectionOcrImages: [UIImage]? = []
+    @State var connectionProfileImages: [UIImage]? = []
+
     // MARK: - View State
     @State private var currentCardIndex = 0
     let totalCards = 4 // Same number of cards as onboarding
 
     // MARK: - Connection Data State
-    @State private var connectionName = ""
+    @State private var connectionName = "their name"
     @State private var connectionAge: Int? = nil
-    @State private var connectionGender = ""
-    @State private var connectionPronouns = ""
-    @State private var connectionEthnicity = ""
-    @State private var connectionShowAgeError = false
+    @State private var connectionContextBlock: String = "... spurly can keep things relevant to your connection. here you can add your connection's interests, job, hometown, relationship type, and anything else that could help spurly help you find your own words quicker ..."
 
-    @State private var connectionCurrentCity = ""
-    @State private var connectionHometown = ""
-    @State private var connectionSchool = ""
-    @State private var connectionJob = ""
+    let nameDefault = "their name"
+    let textEditorDefault = "... spurly can keep things relevant to your connection. here you can add your connection's interests, job, hometown, relationship type, and anything else that could help spurly help you find your own words quicker ..."
 
-    @State private var connectionGreenlights: [String] = []
-    @State private var connectionRedlights: [String] = []
-
-    @State private var connectionDrinking = ""
-    @State private var connectionDatingPlatform = ""
-    @State private var connectionLookingFor = ""
-    @State private var connectionKids = ""
 
 
 
@@ -43,6 +35,7 @@ struct AddConnectionView: View {
     @State private var connectionIsSaving = false // Used for ProgressView during save
     @State private var connectionSaveError: String? = nil // Holds the error message string
     @State private var connectionShowErrorOverlay = false // Controls visibility of the error overlay
+    @State private var connectionShowAgeError = false
 
     // MARK: - Computed Properties
     var progress: Double {
@@ -76,23 +69,27 @@ struct AddConnectionView: View {
     }
 
     // MARK: - Layout Constants (Mirrored from OnboardingView)
-    let cardWidthMultiplier: CGFloat = 0.8
-    let cardHeightMultiplier: CGFloat = 0.52
+    let cardWidthMultiplier: CGFloat = 0.85
+    let cardHeightMultiplier: CGFloat = 0.6
     let screenHeight = UIScreen.main.bounds.height
     let screenWidth = UIScreen.main.bounds.width
 
     // MARK: - Body
     var body: some View {
         GeometryReader { geometry in
+
             ZStack {
                 // Background (Consistent with OnboardingView)
                 Color.tappablePrimaryBg
-                    .ignoresSafeArea() // Ensure it covers the whole screen
+                    .onTapGesture {
+                        hideKeyboard()
+                    }
+                    .zIndex(0)
 
                 Image.tappableBgIcon
-                    .frame(width: screenWidth * 1.5, height: screenHeight * 1.5)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.52) // Mirrored position
-                    .allowsHitTesting(false)
+                    .frame(width: screenWidth * 1.8, height: screenHeight * 1.8)
+                    .position(x: screenWidth / 2, y: screenHeight * 0.5) // Mirrored position
+                    .zIndex(0)
 
                 // Main Content VStack
                 VStack(spacing: 0) {
@@ -121,7 +118,10 @@ struct AddConnectionView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.top, geometry.safeAreaInsets.top > 0 ? 50 : 55) // Adjust top padding
+                        .padding(
+                            .top,
+                            geometry.safeAreaInsets.top > 30 ? 25 : geometry
+                                .safeAreaInsets.top) // Adjust top padding
 
                         Image.bannerLogo // Centered logo
                             .frame(height: screenHeight * 0.1)
@@ -130,12 +130,12 @@ struct AddConnectionView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal)
                     }
-                    .frame(height: geometry.size.height * 0.14) // Matches OnboardingView
-                     // Adjusted top padding to be similar to OnboardingView, considering safe area
+                    .frame(height: geometry.size.height * 0.11)
                     .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top / 4 : 2)
+                    .padding(.bottom, 10)
 
 
-                    Spacer(minLength: 100) // Matches OnboardingView
+                    Spacer() // Matches OnboardingView
 
                     // Progress Indicator (Mirrored from OnboardingView)
                     VStack(alignment: .center, spacing: 5) { // Changed spacing to 5 to match Onboarding
@@ -164,13 +164,7 @@ struct AddConnectionView: View {
 
                              Spacer()
 
-                             // "Skip ahead" button - optional for AddConnectionView,
-                             // but included for closer mirroring.
-                             // You can remove this if "skip ahead" is not applicable here.
                             Button(action: {
-                                // Logic for skip ahead:
-                                // Should probably check `canProceedToNextCard` for the current card
-                                // or a more specific skip validation if needed.
                                 if currentCardIndex < totalCards - 1 {
                                     if canProceedToNextCard {
                                         connectionShowAgeError = false
@@ -179,10 +173,7 @@ struct AddConnectionView: View {
                                         connectionShowAgeError = true
                                     }
                                 }
-                                // If on the last card, "skip ahead" might not make sense,
-                                // or it could mean "skip filling this card and try to save"
-                                // which would need to align with `handleNextOrSave` logic.
-                                // For now, it primarily advances if not on the last card.
+
                             }) {
                                  HStack(spacing: 4) {
                                      Text("skip to next") // Text can be "skip ahead" or "skip to next"
@@ -197,41 +188,30 @@ struct AddConnectionView: View {
                          .frame(width: geometry.size.width * cardWidthMultiplier * 0.8)
                     }
                     // .padding(.bottom, 20) // Original padding, Onboarding has this Spacer(minLength: 20) after progress
-                    Spacer(minLength: 20) // Matches OnboardingView
+                    Spacer() // Matches OnboardingView
 
                     // Card Content Area
                     Group {
                         switch currentCardIndex {
                             case 0:
                                 AddConnectionCardView(
-                                    title: "connection basics",
+                                    title: "connection info",
                                     icon: Image(.addConnectionBasicsIcon)
                                 ) {
                                     AddConnectionBasicsCardContent(
                                         connectionName: $connectionName,
                                         connectionAge: $connectionAge,
-                                        connectionGender: $connectionGender,
-                                        connectionPronouns: $connectionPronouns,
-                                        connectionEthnicity: $connectionEthnicity,
-                                        connectionShowAgeError: $connectionShowAgeError
+                                        connectionContextBlock: $connectionContextBlock,
+                                        connectionShowAgeError: $connectionShowAgeError,
+                                        textEditorDefault: textEditorDefault,
+                                        textFieldDefault: nameDefault
                                     )
                                 }
                             case 1:
-                                AddConnectionCardView(title: "connection background", icon: Image(.addConnectionBackgroundIcon)) {
-                                    AddConnectionBackgroundCardContent(
-                                        connectionCurrentCity: $connectionCurrentCity,
-                                        connectionJob: $connectionJob,
-                                        connectionSchool: $connectionSchool,
-                                        connectionHometown: $connectionHometown
-                                    )
-                                }
-                            case 2:
-                                AddConnectionCardView(title: "connection lifestyle", icon: Image(.addConnectionLifestyleIcon)) {
-                                    AddConnectionLifestyleCardContent(
-                                        connectionDrinking: $connectionDrinking,
-                                        connectionDatingPlatform: $connectionDatingPlatform, // Consider if needed
-                                        connectionLookingFor: $connectionLookingFor,       // Consider if needed
-                                        connectionKids: $connectionKids
+                                AddConnectionCardView(title: "connection profile", icon: Image(.addConnectionBackgroundIcon)) {
+                                    AddConnectionImagesCardContent(
+                                        connectionOcrImages: $connectionOcrImages,
+                                        connectionProfileImages: $connectionProfileImages,
                                     )
                                 }
                             default:
@@ -322,8 +302,6 @@ struct AddConnectionView: View {
                     }
                     .padding(.horizontal, geometry.size.width * ((1.0 - cardWidthMultiplier) / 2.0)) // Mirrored padding
 
-                    Spacer(minLength: 35) // Matches OnboardingView
-
                     // Footer (Mirrored from OnboardingView)
                     VStack(spacing: 2) {
                         Text("we care about protecting your data")
@@ -342,7 +320,8 @@ struct AddConnectionView: View {
                     .padding(.bottom, (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0) + 10) // Mirrored padding
 
 
-                } // End Main VStack
+                }
+                .zIndex(2)// End Main VStack
                 .disabled(connectionIsSaving) // Disable interaction while saving (same as before)
 
                 // Saving Progress Overlay (same as before, generally fine)
@@ -399,6 +378,8 @@ struct AddConnectionView: View {
         } // End GeometryReader
     }
 
+
+
     // MARK: - Actions
 
     func attemptProceedOrSave() {
@@ -451,19 +432,9 @@ struct AddConnectionView: View {
         // Reset all @State variables to their initial values
         connectionName = ""
         connectionAge = nil
-        connectionGender = ""
-        connectionPronouns = ""
-        connectionSchool = ""
-        connectionJob = ""
-        connectionDrinking = ""
-        connectionEthnicity = ""
-        connectionCurrentCity = ""
-        connectionHometown = ""
-        connectionGreenlights = []
-        connectionRedlights = []
-        connectionDatingPlatform = ""
-        connectionLookingFor = ""
-        connectionKids = ""
+        connectionContextBlock = ""
+        connectionOcrImages = []
+        connectionProfileImages = []
 
         currentCardIndex = 0 // Reset card index
         connectionShowAgeError = false
@@ -481,26 +452,16 @@ struct AddConnectionView: View {
         connectionSaveError = nil // Clear previous errors
         connectionShowErrorOverlay = false // Hide error overlay
 
-        resolveTopicConflicts()
 
         let nameForConnection = self.connectionName
 
         let connectionPayload = AddConnectionPayload(
             connectionName: nameForConnection,
             connectionAge: connectionAge,
-            connectionGender: connectionGender,
-            connectionPronouns: connectionPronouns,
-            connectionSchool: connectionSchool,
-            connectionJob: connectionJob,
-            connectionDrinking: connectionDrinking,
-            connectionEthnicity: connectionEthnicity,
-            connectionCurrentCity: connectionCurrentCity,
-            connectionHometown: connectionHometown,
-            connectionGreenlights: connectionGreenlights,
-            connectionRedlights: connectionRedlights,
-            connectionDatingPlatform: connectionDatingPlatform,
-            connectionLookingFor: connectionLookingFor,
-            connectionKids: connectionKids)
+            connectionContextBlock: connectionContextBlock,
+            connectionOcrImages: connectionOcrImages,
+            connectionProfileImages: connectionProfileImages
+        )
 
         guard let encodedPayload = try? JSONEncoder().encode(connectionPayload) else {
             handleSaveResult(.failure(NSError(domain: "Encoding", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to prepare connection data."])))
@@ -620,16 +581,6 @@ struct AddConnectionView: View {
         }
     }
 
-    private func resolveTopicConflicts() {
-        let greenSet = Set(connectionGreenlights)
-        let redSet = Set(connectionRedlights)
-        let conflictingTopics = greenSet.intersection(redSet)
-        if !conflictingTopics.isEmpty {
-            print("Resolving topic conflicts for: \(conflictingTopics)")
-            connectionGreenlights.removeAll { conflictingTopics.contains($0) }
-            connectionRedlights.removeAll { conflictingTopics.contains($0) }
-        }
-    }
 }
 
 // NavigationButtonStyle from AddConnectionView.swift (ensure it's defined or accessible)
@@ -641,11 +592,26 @@ struct AddConnectionView: View {
 
 // MARK: - Preview
 #if DEBUG
-struct AddConnectionView_Previews: PreviewProvider {
-    static var previews: some View {
-        AddConnectionView()
-            .environmentObject(ConnectionManager())
-            .environmentObject(AuthManager())
+extension UIImage {
+    static func solidColor(color: UIColor, size: CGSize = CGSize(width: 100, height: 100)) -> UIImage {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0)
+        color.setFill()
+        UIRectFill(CGRect(origin: .zero, size: size))
+        let image = UIGraphicsGetImageFromCurrentImageContext() ?? UIImage()
+        UIGraphicsEndImageContext()
+        return image
     }
 }
+
+struct AddConnectionView_Previews: PreviewProvider {
+    @State static var dummyOcrImages: [UIImage]? = [UIImage.solidColor(color: .red)]
+    @State static var dummyProfileImages: [UIImage]? = [UIImage.solidColor(color: .blue)]
+
+    static var previews: some View {
+        AddConnectionView()
+        .environmentObject(ConnectionManager())
+        .environmentObject(AuthManager())
+    }
+}
+
 #endif

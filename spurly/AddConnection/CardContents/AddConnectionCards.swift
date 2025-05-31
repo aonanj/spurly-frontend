@@ -12,7 +12,7 @@ struct AddConnectionCardView<Content: View>: View {
     let addConnectionCardTitle: String;
     let addConnectionCardIcon: Image;
     let addConnectionCardContent: Content
-    private let cardBackgroundColor = Color.spurlyCardBackground; private let cardOpacity: Double = 0.92
+    private let cardBackgroundColor = Color.spurlyCardBackground; private let cardOpacity: Double = 80
     private let cardCornerRadius: CGFloat = 12.0; private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
     init(
         title: String,
@@ -23,21 +23,24 @@ struct AddConnectionCardView<Content: View>: View {
     }
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .center, spacing: 5) {
                 Spacer()
-                HStack(alignment: .center, spacing: 5) {
+                HStack(alignment: .center, spacing: 12) {
                     addConnectionCardIcon
                         .resizable()
                         .scaledToFit()
                         .frame(width: 24, height: 24)
-                        .foregroundColor(.spurlyPrimaryText)
-                    Text(addConnectionCardTitle).font(cardTitleFont).foregroundColor(.spurlyPrimaryText)
+                        .foregroundColor(.primaryText)
+                    Text(addConnectionCardTitle)
+                        .font(cardTitleFont)
+                        .foregroundColor(.primaryText)
 
                 }
-                addConnectionCardContent.padding(.horizontal).opacity(1).padding(.vertical);
+                .padding(.top, 15)
+                .padding(.bottom, 10)
+                addConnectionCardContent.padding(.horizontal, 10).padding(.vertical, 5);
                 Spacer()
             }
-            .frame(maxWidth: .infinity)
             .background(cardBackgroundColor)
             .opacity(cardOpacity).cornerRadius(cardCornerRadius)
             .overlay(
@@ -47,7 +50,7 @@ struct AddConnectionCardView<Content: View>: View {
                             gradient: Gradient(
                                 colors: [
                                     Color.spurlyCardBackground.opacity(0.4),
-                                    Color.spurlyHighlight.opacity(0.8)
+                                    Color.spurlyHighlight.opacity(0.85)
                                 ]
                             ),
                             startPoint: .topLeading,
@@ -58,159 +61,146 @@ struct AddConnectionCardView<Content: View>: View {
                     .cornerRadius(cardCornerRadius)
             );
         }
+        .scrollDismissesKeyboard(.interactively)
+        .ignoresSafeArea(.keyboard)
     }
 }
+
 
 struct AddConnectionBasicsCardContent: View {
     @Binding var connectionName: String
     @Binding var connectionAge: Int?
-    @Binding var connectionGender: String
-    @Binding var connectionPronouns: String
-    @Binding var connectionEthnicity: String
+    @Binding var connectionContextBlock: String
     @Binding var connectionShowAgeError: Bool
     @FocusState private var connectionFieldIsFocused: Bool
-    let genderOptions = ["", "male", "female", "non-binary", "other"]
-    let pronounOptions = ["", "he/him", "she/her", "they/them", "other"]
-    let ethnicityOptions = ["", "american indian/alaska native", "asian", "black/african american", "hispanic/Latino", "aanhpi", "white", "middle eastern/north african", "multiracial", "other"]
+    @FocusState private var connectionEditorIsFocused: Bool
     let ageOptions: [Int?] = [nil] + Array(18..<100).map { Optional($0) }
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
+    let textEditorDefault: String
+    let textFieldDefault: String
+    let paddingHorizontal: CGFloat = 12
+    let paddingVertical: CGFloat = 10
+    let fontLineHeight = UIFont.systemFont(ofSize: 14).lineHeight * 1.2
+    var minHeight: CGFloat {
+        fontLineHeight + (paddingVertical * 1.8)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("their name").font(labelFont).foregroundColor(.spurlySecondaryText)
-            TextField("...", text: $connectionName)
-                .textFieldStyle(CustomTextFieldStyle())
-                .textContentType(.name)
-                .focused($connectionFieldIsFocused)
-                .limitInputLength(for: $connectionName)
-                .onSubmit { connectionFieldIsFocused = false }
-            Spacer().frame(height: 8)
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("their age").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "connectionAge", selection: $connectionAge, options: ageOptions, textMapping: { $0 != nil ? "\($0!)" : "" })
-                        .opacity(1)
-                        .frame(height: 44)
+        ZStack {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    connectionFieldIsFocused = false
+                    connectionEditorIsFocused = false
+                }
+            VStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .center, spacing: 5) {
+
+                    TextField("", text: $connectionName)
+                        .focused($connectionFieldIsFocused)
+                        .font(.custom("SF Pro Text", size: 14).weight(.regular))
+                        .foregroundColor(
+                            connectionName == textFieldDefault ? .spurlySecondaryText : .spurlyPrimaryText)
+                        .padding(.horizontal, paddingHorizontal)
+                        .padding(.vertical, paddingVertical)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.spurlyTertiaryBackground.opacity(1))
+                        )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.red, lineWidth: (connectionShowAgeError && !(connectionAge ?? 0 >= 18)) ? 2 : 0)
+                                .stroke(.spurlyHighlight.opacity(0.4), lineWidth: 2)
                         )
-                    if connectionShowAgeError && !(connectionAge ?? 0 >= 18) {
-                        Text("connection must be 18")
-                            .font(.caption)
-                            .foregroundColor(.red)
+                        .shadow(
+                            color: .spurlyPrimaryText.opacity(0.44),
+                            radius: 4,
+                            x: 2,
+                            y: 5
+                        )
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: minHeight)
+                        .onChange(of: connectionFieldIsFocused) {
+                            if connectionFieldIsFocused && connectionName == textFieldDefault {
+                                connectionName = ""
+                            } else if !connectionFieldIsFocused && connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                connectionName = textFieldDefault
+                            }
+                        }
+
+                    AgePickerMenu(selectedAge: $connectionAge)
+                        .padding(.leading, 6)
+                        .frame(maxWidth: 105)
+                        .border(Color.red, width: (connectionShowAgeError && !(connectionAge ?? 0 >= 18)) ? 3 : 0)
+                }
+                .frame(minHeight: minHeight)
+
+                Spacer()
+
+                TextEditor(text: $connectionContextBlock)
+                    .focused($connectionEditorIsFocused)
+                    .font(.custom("SF Pro Text", size: 16).weight(.heavy))
+                    .foregroundColor(
+                        connectionContextBlock == textEditorDefault ? .spurlySecondaryText : .spurlyPrimaryText)
+                    .padding(3)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.spurlyTertiaryBackground.opacity(0.6))
+                    )
+                    .opacity(0.78)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(.spurlyAccent1.opacity(0.45), lineWidth: 2)
+                    )
+                    .frame(height: 300)
+                    .frame(maxWidth: .infinity)
+                    .onChange(of: connectionEditorIsFocused) {
+                        if connectionEditorIsFocused && connectionContextBlock == textEditorDefault {
+                            connectionContextBlock = ""
+                        } else if !connectionEditorIsFocused && connectionContextBlock.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            connectionContextBlock = textEditorDefault
+                        }
                     }
-                }
-                .alignmentGuide(.top) { d in d[.top] }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("their gender").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "connectionGender", selection: $connectionGender, options: genderOptions, textMapping: { $0 }).frame(height: 44)
-                }.alignmentGuide(.top) { d in d[.top] }
             }
-            Spacer().frame(height: 8)
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("their pronouns").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "connectionPronouns", selection: $connectionPronouns, options: pronounOptions, textMapping: { $0 }).frame(height: 44)
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("their ethnicity").font(labelFont).foregroundColor(.spurlySecondaryText)
-                    CustomPickerStyle(title: "connectionEthnicity", selection: $connectionEthnicity, options: ethnicityOptions, textMapping: { $0 }).frame(height: 44)
-                }
-            }
-            Spacer().frame(height: 8)
-        }
+            .padding(.horizontal, 5)// End VStack
+        } // End ZStack
     }
 }
-struct AddConnectionBackgroundCardContent: View {
-    @FocusState private var connectionIsCityFieldFocused: Bool;
-    @FocusState private var connectionIsWorkFieldFocused: Bool;
-    @FocusState private var connectionIsSchoolFieldFocused: Bool;
-    @FocusState private var connectionIsHometownFieldFocused: Bool
-    @Binding var connectionCurrentCity: String;
-    @Binding var connectionJob: String;
-    @Binding var connectionSchool: String;
-    @Binding var connectionHometown: String
+struct AddConnectionImagesCardContent: View {
+    @FocusState private var connectionIsOcrImagesFocused: Bool
+    @FocusState private var connectionIsProfileImagesFocused: Bool
+
+    @Binding var connectionOcrImages: [UIImage]?
+    @Binding var connectionProfileImages: [UIImage]?
+
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("their city")
-                .font(labelFont)
-                .foregroundColor(.spurlySecondaryText); TextField(
-                    "...",
-                    text: $connectionCurrentCity
-                )
-                .textFieldStyle(CustomTextFieldStyle())
-                .textContentType(.addressCity)
-                .limitInputLength(for: $connectionCurrentCity); Spacer()
-                .frame(height: 4)
-                .focused($connectionIsCityFieldFocused).onSubmit { connectionIsCityFieldFocused = false }
-            Text("their job")
-                .font(labelFont)
-                .foregroundColor(.spurlySecondaryText); TextField(
-                    "...",
-                    text: $connectionJob
-                )
-                .textFieldStyle(CustomTextFieldStyle())
-                .textContentType(.jobTitle)
-                .limitInputLength(for: $connectionJob); Spacer()
-                .frame(height: 4)
-                .focused($connectionIsWorkFieldFocused).onSubmit { connectionIsWorkFieldFocused = false }
-            Text("their school")
-                .font(labelFont)
-                .foregroundColor(.spurlySecondaryText); TextField(
-                    "...",
-                    text: $connectionSchool
-                )
-                .textFieldStyle(CustomTextFieldStyle())
-                .textContentType(.organizationName)
-                .limitInputLength(for: $connectionSchool); Spacer()
-                .frame(height: 4)
-                .focused($connectionIsSchoolFieldFocused).onSubmit { connectionIsSchoolFieldFocused = false }
-            Text("their hometown")
-                .font(labelFont)
-                .foregroundColor(.spurlySecondaryText); TextField(
-                    "...",
-                    text: $connectionHometown
-                )
-                .textFieldStyle(CustomTextFieldStyle())
-                .textContentType(.addressCity)
-                .limitInputLength(for: $connectionHometown)
-                .focused($connectionIsHometownFieldFocused).onSubmit { connectionIsHometownFieldFocused = false }
-        }
+        VStack(alignment: .leading, spacing: 8) {
+
+            PhotoPickerView(
+                selectedImages: Binding(
+                    get: { connectionProfileImages ?? [] },
+                    set: { connectionProfileImages = $0.isEmpty ? nil : $0 }
+                ),
+                label: "add profile pics"
+            )
+            .focused($connectionIsProfileImagesFocused)
+
+            Divider()
+                .background(Color.spurlyHighlight.opacity(0.3))
+
+
+
+            PhotoPickerView(
+                selectedImages: Binding(
+                    get: { connectionOcrImages ?? [] },
+                    set: { connectionOcrImages = $0.isEmpty ? nil : $0 }
+                ),
+                label: "add connection pics"
+            )
+            .focused($connectionIsOcrImagesFocused)
+        }.padding(.horizontal, 5)
     }
-}
-struct AddConnectionAboutCardContent: View {
-    @Binding var connectionGreenlights: [String];
-    @Binding var connectionRedlights: [String];
-    @Binding var allTopics: [String]
-    let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            TopicInputField(label: "their likes", topics: $connectionGreenlights, exclude: connectionRedlights, allTopics: allTopics, isGreen: true)
-            TopicInputField(label: "their dislikes", topics: $connectionRedlights, exclude: connectionGreenlights, allTopics: allTopics, isGreen: false)
-        }
-    }
-}
-struct AddConnectionLifestyleCardContent: View {
-    @Binding var connectionDrinking: String;
-    @Binding var connectionDatingPlatform: String;
-    @Binding var connectionLookingFor: String;
-    @Binding var connectionKids: String
-    let drinkingOptions = ["", "often", "socially", "rarely", "never"];
-    let datingPlatformOptions = ["", "tinder", "bumble", "hinge", "raya", "plenty of fish", "match.com", "okcupid", "instagram", "feeld", "grindr", "other"]
-    let lookingForOptions = ["", "casual", "short term", "long term", "marriage", "enm", "not sure"];
-    let kidsOptions = ["", "want", "don't want", "have kids", "have kids, want more", "not sure"]
-    let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("their drinking").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "connectionDrinking", selection: $connectionDrinking, options: drinkingOptions, textMapping: { $0 }).frame(height: 44) }
-                VStack(alignment: .leading, spacing: 8) { Text("their dating app").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "connectionDatingPlatform", selection: $connectionDatingPlatform, options: datingPlatformOptions, textMapping: { $0 }).frame(height: 44) }
-            }; Spacer().frame(height: 4)
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) { Text("they're looking for").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "looking for", selection: $connectionLookingFor, options: lookingForOptions, textMapping: { $0 }).frame(height: 44) }
-                VStack(alignment: .leading, spacing: 8) { Text("their kids").font(labelFont).foregroundColor(.spurlySecondaryText); CustomPickerStyle(title: "kids", selection: $connectionKids, options: kidsOptions, textMapping: { $0 }).frame(height: 44) }
-            }; Spacer().frame(height: 8)
-        }.padding(.top, 24).padding(.bottom, 20)
-    }
+
 }

@@ -59,7 +59,7 @@ struct SituationPicker: View {
                 .bold()
                 .foregroundColor(.secondaryText)
             CustomPickerStyle(
-                title: "Select situation", selection: $selectedSituation,
+                title: "", selection: $selectedSituation,
                 options: situationOptions, textMapping: { $0.isEmpty ? "..." : $0 }
             )
             .opacity(inputBackgroundOpacity + 0.05) // Apply opacity

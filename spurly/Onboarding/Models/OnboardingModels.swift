@@ -9,10 +9,10 @@ import SwiftUI
 
 // MARK: - Onboarding Data Structure
 //struct OnboardingPayload: Codable {
-//    var name: String?; var age: Int?; var profile_context: String?;
-//    enum CodingKeys: String, CodingKey { case name, age, profile_context}
-//    init(name: String?, age: Int?, profile_context: String?) {
-//        self.name = name?.isEmpty ?? true ? nil : name; self.age = age; self.profile_context = profile_context?.isEmpty ?? true ? nil : profile_context;
+//    var name: String?; var age: Int?; var user_context_block: String?;
+//    enum CodingKeys: String, CodingKey { case name, age, user_context_block}
+//    init(name: String?, age: Int?, user_context_block: String?) {
+//        self.name = name?.isEmpty ?? true ? nil : name; self.age = age; self.user_context_block = user_context_block?.isEmpty ?? true ? nil : user_context_block;
 //    }
 //}
 

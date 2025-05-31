@@ -60,6 +60,9 @@ struct ContextInputView: View {
     @State private var showEditMessageSheet: Bool = false // NEW state for sheet presentation
     @State private var messageTextBeingEdited: String = "" //
 
+    // Token refresh state
+    @State private var isRefreshingToken: Bool = false
+
 
     private var editingMessageBinding: Binding<ConversationMessage>? { //
         guard let id = editingMessageId,
@@ -110,7 +113,7 @@ struct ContextInputView: View {
                 .background(Color.clear)
                 .offset(x: sideMenuManager.isMenuOpen ? self.menuWidthValue : CGFloat(0)) //
                 .animation(.easeInOut, value: sideMenuManager.isMenuOpen)
-                .disabled(sideMenuManager.isMenuOpen)
+                .disabled(sideMenuManager.isMenuOpen || isSubmitting || isSubmittingPhotos || isRefreshingToken)
                 .opacity(0.89)
                 .zIndex(2)
 
@@ -121,7 +124,7 @@ struct ContextInputView: View {
                 Button("OK") { photoSubmissionError = nil } //
             } message: { errorDetail in Text(errorDetail) } //
             .sheet(isPresented: $connectionManager.isNewConnectionOpen) { //
-                AddConnectionView() //
+                AddConnectionView()
                     .environmentObject(authManager) //
                     .environmentObject(connectionManager) //
             }
@@ -363,7 +366,8 @@ struct ContextInputView: View {
         }
     }
 
-    // MARK: - Helper Functions (Copied from your uploaded file)
+    // MARK: - Helper Functions with Enhanced Security
+
     private func hideKeyboard() { //
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
@@ -378,12 +382,8 @@ struct ContextInputView: View {
         print("Added manual message: \(newMessage.text) from \(newMessage.sender.rawValue)")
     }
 
-    private func submitPhotosForOCR() { //
-        guard let token = authManager.token else {
-            photoSubmissionError = "No token available for photo submission."
-            return
-        }
-        let userId = authManager.userId
+    // Enhanced submitPhotosForOCR with proper token handling and refresh
+    private func submitPhotosForOCR() {
         guard !conversationImages.isEmpty else { return }
 
         hideKeyboard()
@@ -391,24 +391,47 @@ struct ContextInputView: View {
         isSubmittingPhotos = true
         photosSubmittedSuccessfully = false
 
+        // Check if we have a valid token
+        guard let token = authManager.token else {
+            photoSubmissionError = "You must be logged in to submit photos."
+            isSubmittingPhotos = false
+            return
+        }
+
+        // Prepare the image data
         let imageDatas: [String] = conversationImages.compactMap { image in
-            guard let orientedImage = imageWithCorrectOrientation(image), //
+            guard let orientedImage = imageWithCorrectOrientation(image),
                   let imageData = orientedImage.jpegData(compressionQuality: 0.7) else { return nil }
             return imageData.base64EncodedString()
         }
 
         guard !imageDatas.isEmpty else {
             photoSubmissionError = "Could not process images for upload."
-            isSubmittingPhotos = false; return
+            isSubmittingPhotos = false
+            return
         }
-        struct OcrPayload: Codable { let images: [String]; let userId: String? }
-        let payload = OcrPayload(images: imageDatas, userId: userId)
 
-        guard let url = URL(string: "https://your.backend/api/ocr") else { // Replace with actual URL //
-            photoSubmissionError = "Invalid OCR backend URL."; isSubmittingPhotos = false; return
+        performOCRRequest(with: imageDatas, token: token)
+    }
+
+    private func performOCRRequest(with imageDatas: [String], token: String, isRetry: Bool = false) {
+        struct OcrPayload: Codable {
+            let images: [String]
+            let userId: String?
         }
+
+        let payload = OcrPayload(images: imageDatas, userId: authManager.userId)
+
+        guard let url = URL(string: "https://your.backend/api/ocr") else {
+            photoSubmissionError = "Invalid OCR backend URL."
+            isSubmittingPhotos = false
+            return
+        }
+
         guard let encodedPayload = try? JSONEncoder().encode(payload) else {
-            photoSubmissionError = "Failed to prepare photo data."; isSubmittingPhotos = false; return
+            photoSubmissionError = "Failed to prepare photo data."
+            isSubmittingPhotos = false
+            return
         }
 
         var request = URLRequest(url: url)
@@ -418,23 +441,50 @@ struct ContextInputView: View {
         request.httpBody = encodedPayload
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                isSubmittingPhotos = false
-                if let error = error { photoSubmissionError = "Network error: \(error.localizedDescription)"; return }
-                guard let httpResponse = response as? HTTPURLResponse else { photoSubmissionError = "Invalid response from server."; return }
-                guard (200...299).contains(httpResponse.statusCode) else {
-                    var serverMsg = "Photo upload failed (\(httpResponse.statusCode))."
-                    if let d = data, let s = String(data: d, encoding: .utf8), !s.isEmpty { serverMsg += " Details: \(s)" }
-                    photoSubmissionError = serverMsg; return
+            DispatchQueue.main.async { [self] in
+                if let error = error {
+                    self.isSubmittingPhotos = false
+                    self.photoSubmissionError = "Network error: \(error.localizedDescription)"
+                    return
                 }
-                photosSubmittedSuccessfully = true
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    self.isSubmittingPhotos = false
+                    self.photoSubmissionError = "Invalid response from server."
+                    return
+                }
+
+                // Handle 401 Unauthorized - attempt token refresh
+                if httpResponse.statusCode == 401 && !isRetry {
+                    self.handleTokenRefreshAndRetry {
+                        self.performOCRRequest(with: imageDatas, token: self.authManager.token ?? "", isRetry: true)
+                    }
+                    return
+                }
+
+                guard (200...299).contains(httpResponse.statusCode) else {
+                    self.isSubmittingPhotos = false
+                    var serverMsg = "Photo upload failed (\(httpResponse.statusCode))."
+                    if let d = data, let s = String(data: d, encoding: .utf8), !s.isEmpty {
+                        serverMsg += " Details: \(s)"
+                    }
+                    self.photoSubmissionError = serverMsg
+                    return
+                }
+
+                self.isSubmittingPhotos = false
+                self.photosSubmittedSuccessfully = true
+
                 if let responseData = data {
                     do {
-                        let decodedResponse = try JSONDecoder().decode(OcrConversationResponse.self, from: responseData) //
+                        let decodedResponse = try JSONDecoder().decode(OcrConversationResponse.self, from: responseData)
                         self.conversationMessages.append(contentsOf: decodedResponse.messages)
-                        self.conversationText = ""
-                    } catch { self.photoSubmissionError = "Failed to process server response." }
-                } else { print("OCR Warning: No data received.") }
+                    } catch {
+                        self.photoSubmissionError = "Failed to process server response."
+                    }
+                } else {
+                    print("OCR Warning: No data received.")
+                }
             }
         }.resume()
     }
@@ -477,30 +527,45 @@ struct ContextInputView: View {
         }
     }
 
-    // Corrected struct name usage here
-    private func submitContext() { //
-        guard let token = authManager.token else {
-            submissionError = "No token available for submission."; return
-        }
-        let userId = authManager.userId
-        let currentConnectionId = connectionManager.currentConnectionId
+    // Enhanced submitContext with proper token handling and refresh
+    private func submitContext() {
         hideKeyboard()
-        submissionError = nil; showTopicError = false
+        submissionError = nil
+        showTopicError = false
+        isSubmitting = true
+
+        // Check if we have a valid token
+        guard let token = authManager.token else {
+            submissionError = "You must be logged in to generate spurs."
+            isSubmitting = false
+            return
+        }
+
+        let currentConnectionId = connectionManager.currentConnectionId
 
         // Use the member-level struct SubmitContextPayload
-        let payload = SubmitContextPayload( // <-- CORRECTED
+        let payload = SubmitContextPayload(
             messages: conversationMessages.isEmpty ? nil : conversationMessages.map { SimplifiedMessage(sender: $0.sender.rawValue, text: $0.text) },
             situation: selectedSituation.isEmpty ? nil : selectedSituation,
             topic: topic.isEmpty ? nil : topic,
-            userId: userId,
+            userId: authManager.userId,
             connectionId: currentConnectionId
         )
 
-        guard let url = URL(string: "https://your.backend/api/generate") else { // Replace with actual URL //
-            submissionError = "Invalid backend URL."; return
+        performContextSubmission(with: payload, token: token)
+    }
+
+    private func performContextSubmission(with payload: SubmitContextPayload, token: String, isRetry: Bool = false) {
+        guard let url = URL(string: "https://your.backend/api/generate") else {
+            submissionError = "Invalid backend URL."
+            isSubmitting = false
+            return
         }
+
         guard let encodedPayload = try? JSONEncoder().encode(payload) else {
-            submissionError = "Failed to prepare data."; return
+            submissionError = "Failed to prepare data."
+            isSubmitting = false
+            return
         }
 
         var request = URLRequest(url: url)
@@ -509,35 +574,86 @@ struct ContextInputView: View {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.httpBody = encodedPayload
 
-        isSubmitting = true
         URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                isSubmitting = false
-                if let error = error { submissionError = "Network request failed: \(error.localizedDescription)"; return }
-                guard let httpResponse = response as? HTTPURLResponse else { submissionError = "Invalid response from server."; return }
-                guard (200...299).contains(httpResponse.statusCode) else {
-                    var serverMsg = "Server error (\(httpResponse.statusCode))."
-                    if let d = data, let s = String(data: d, encoding: .utf8), !s.isEmpty { serverMsg += " Details: \(s)" }
-                    submissionError = serverMsg; return
+            DispatchQueue.main.async { [self] in
+                if let error = error {
+                    self.isSubmitting = false
+                    self.submissionError = "Network request failed: \(error.localizedDescription)"
+                    return
                 }
-                guard let responseData = data else { submissionError = "No data received from server."; return }
 
-                struct BackendSpursResponse: Decodable { let spurs: [BackendSpurData]? } //
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    self.isSubmitting = false
+                    self.submissionError = "Invalid response from server."
+                    return
+                }
+
+                // Handle 401 Unauthorized - attempt token refresh
+                if httpResponse.statusCode == 401 && !isRetry {
+                    self.handleTokenRefreshAndRetry {
+                        self.performContextSubmission(with: payload, token: self.authManager.token ?? "", isRetry: true)
+                    }
+                    return
+                }
+
+                guard (200...299).contains(httpResponse.statusCode) else {
+                    self.isSubmitting = false
+                    var serverMsg = "Server error (\(httpResponse.statusCode))."
+                    if let d = data, let s = String(data: d, encoding: .utf8), !s.isEmpty {
+                        serverMsg += " Details: \(s)"
+                    }
+                    self.submissionError = serverMsg
+                    return
+                }
+
+                self.isSubmitting = false
+
+                guard let responseData = data else {
+                    self.submissionError = "No data received from server."
+                    return
+                }
+
+                struct BackendSpursResponse: Decodable { let spurs: [BackendSpurData]? }
+
                 do {
                     let decodedResponse = try JSONDecoder().decode(BackendSpursResponse.self, from: responseData)
                     if let receivedSpurData = decodedResponse.spurs, !receivedSpurData.isEmpty {
-                        spurManager.loadSpurs(backendSpurData: receivedSpurData) //
-                    } else { submissionError = "No spurs were generated." }
-                } catch { submissionError = "Failed to understand server response for spurs: \(error.localizedDescription)" }
+                        self.spurManager.loadSpurs(backendSpurData: receivedSpurData)
+                    } else {
+                        self.submissionError = "No spurs were generated."
+                    }
+                } catch {
+                    self.submissionError = "Failed to understand server response for spurs: \(error.localizedDescription)"
+                }
             }
         }.resume()
+    }
+
+    private func handleTokenRefreshAndRetry(onSuccess: @escaping () -> Void) {
+        isRefreshingToken = true
+
+        authManager.refreshAccessToken { success in
+            DispatchQueue.main.async { [self] in
+                self.isRefreshingToken = false
+
+                if success {
+                    // Token refreshed successfully, retry the original request
+                    onSuccess()
+                } else {
+                    // Token refresh failed, user needs to log in again
+                    self.submissionError = "Session expired. Please log in again."
+                    self.isSubmitting = false
+                    self.isSubmittingPhotos = false
+                }
+            }
+        }
     }
 
     private var spurGenerationButton: some View { //
         Button(action: submitContext) {
             ZStack{
                 Image("SpurGenerationButton").resizable().scaledToFit() //
-                if isSubmitting {
+                if isSubmitting || isRefreshingToken {
                     ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(1.5).background(Circle().fill(Color.black.opacity(0.3)))
                 }
@@ -546,7 +662,7 @@ struct ContextInputView: View {
         .shadow(color: .black.opacity(0.45), radius: 5, x: 4, y: 4) //
         .frame(width: 80, height: 80) //
         .padding(.top, 20) //
-        .disabled(isSubmitting) //
+        .disabled(isSubmitting || isRefreshingToken) //
     }
 
     // This struct should be defined at the member level of ContextInputView
