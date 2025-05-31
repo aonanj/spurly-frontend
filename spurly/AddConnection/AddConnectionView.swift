@@ -12,13 +12,14 @@ struct AddConnectionView: View {
     @Environment(\.dismiss) var dismiss // To close the view
     @EnvironmentObject var connectionManager: ConnectionManager
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var sideMenuManager: SideMenuManager
 
     @State var connectionOcrImages: [UIImage]? = []
     @State var connectionProfileImages: [UIImage]? = []
 
     // MARK: - View State
     @State private var currentCardIndex = 0
-    let totalCards = 4 // Same number of cards as onboarding
+    let totalCards = 2 // Updated to 2 cards based on the switch statement
 
     // MARK: - Connection Data State
     @State private var connectionName = "their name"
@@ -28,14 +29,12 @@ struct AddConnectionView: View {
     let nameDefault = "their name"
     let textEditorDefault = "... spurly can keep things relevant to your connection. here you can add your connection's interests, job, hometown, relationship type, and anything else that could help spurly help you find your own words quicker ..."
 
-
-
-
     // Submission State
     @State private var connectionIsSaving = false // Used for ProgressView during save
     @State private var connectionSaveError: String? = nil // Holds the error message string
     @State private var connectionShowErrorOverlay = false // Controls visibility of the error overlay
     @State private var connectionShowAgeError = false
+    @State private var errorMessageTitle = ""
 
     // MARK: - Computed Properties
     var progress: Double {
@@ -43,11 +42,16 @@ struct AddConnectionView: View {
         return Double(currentCardIndex + 1) / Double(totalCards)
     }
 
+    var isAgeValidForSubmission: Bool {
+        guard let currentAge = connectionAge else { return false }
+        return currentAge >= 18
+    }
+
     // REVISED: Validation for proceeding to the next card
     var canProceedToNextCard: Bool {
         if currentCardIndex == 0 { // Basics Card
             // Age must be selected (not nil) AND be >= 18 to proceed from the first card
-            return (connectionAge != nil && connectionAge ?? 0 >= 18)
+            return isAgeValidForSubmission
         }
         return true // Allow proceeding from other cards freely
     }
@@ -55,8 +59,9 @@ struct AddConnectionView: View {
     // REVISED: Validation for final save action
     var canSaveChanges: Bool {
         // Age must be selected (not nil) AND be >= 18 for saving, plus name must be present.
-        let connectionAgeIsValid = (connectionAge != nil && connectionAge ?? 0 >= 18)
-        return !connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && connectionAgeIsValid
+        let nameIsValid = !connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                         connectionName != nameDefault
+        return nameIsValid && isAgeValidForSubmission
     }
 
     // Computed property to determine if the Next/Save button should *appear* disabled and act accordingly
@@ -74,6 +79,10 @@ struct AddConnectionView: View {
     let screenHeight = UIScreen.main.bounds.height
     let screenWidth = UIScreen.main.bounds.width
 
+    private var menuWidthValue: CGFloat { //
+        UIScreen.main.bounds.width * 0.82
+    }
+
     // MARK: - Body
     var body: some View {
         GeometryReader { geometry in
@@ -88,109 +97,99 @@ struct AddConnectionView: View {
 
                 Image.tappableBgIcon
                     .frame(width: screenWidth * 1.8, height: screenHeight * 1.8)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.5) // Mirrored position
-                    .zIndex(0)
+                    .position(x: screenWidth / 2, y: screenHeight * 0.5)
+                    .zIndex(1)
 
                 // Main Content VStack
                 VStack(spacing: 0) {
-                    // Header (Mirrored from OnboardingView - Logo and Tagline)
-                    VStack(alignment: .center, spacing: 0) {
-                        // Optional: Menu button if still needed, but OnboardingView doesn't have it here.
-                        // If keeping, consider placement that doesn't interfere with the mirrored layout.
-                        // For strict mirroring, this HStack would be removed or rethought.
-                        HStack {
-                            Button(action: {
-                                // Assuming sideMenuManager.openSideMenu() is the intended action
-                                // For now, using a dummy to avoid needing SideMenuManager in this direct context
-                                // if it's not available or not the focus of this refactor.
-                                print("Menu button tapped (AddConnectionView)")
-                            }) {
-                                Image.menuIcon // Ensure this is defined as in other views
-                                    .frame(width: 44, height: 44)
-                            }
-                            Spacer()
-
-                            Button(action: {
-                                clearAllConnectionDataAndDismiss()
-                            }) {
-                                Image.cancelAddConnectionIcon
-                                    .frame(width: 35, height: 35) // Adjust size as
-                            }
+                    // Header with buttons
+                    HStack {
+                        Button(action: {
+                            // Menu button action - could open side menu if needed
+                            sideMenuManager.toggleSideMenu()
+                        }) {
+                            Image.menuIcon
+                                .frame(width: 44, height: 44)
                         }
-                        .padding(.horizontal)
-                        .padding(
-                            .top,
-                            geometry.safeAreaInsets.top > 30 ? 25 : geometry
-                                .safeAreaInsets.top) // Adjust top padding
+                        Spacer()
 
-                        Image.bannerLogo // Centered logo
+                        Button(action: {
+                            clearAllConnectionDataAndDismiss()
+                        }) {
+                            Image.cancelAddConnectionIcon
+                                .frame(width: 35, height: 35)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : 20)
+
+                    // Logo and tagline
+                    VStack(spacing: 5) {
+                        Image.bannerLogo
                             .frame(height: screenHeight * 0.1)
 
-                        Text.bannerTag // Centered tagline
+                        Text.bannerTag
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal)
                     }
-                    .frame(height: geometry.size.height * 0.11)
-                    .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top / 4 : 2)
-                    .padding(.bottom, 10)
+                    .padding(.top, 10)
+                    .padding(.bottom, 20)
 
-
-                    Spacer() // Matches OnboardingView
-
-                    // Progress Indicator (Mirrored from OnboardingView)
-                    VStack(alignment: .center, spacing: 5) { // Changed spacing to 5 to match Onboarding
+                    // Progress Indicator
+                    VStack(alignment: .center, spacing: 5) {
                         ZStack {
                             Capsule()
-                                .fill(Color.tertiaryBg.opacity(0.6)) // Matches Onboarding
+                                .fill(Color.tertiaryBg.opacity(0.6))
                                 .frame(width: geometry.size.width * cardWidthMultiplier * 0.8, height: 6)
-                                .shadow(color: .black.opacity(0.5), radius: 3, x: 3, y: 3) // Added shadow
+                                .shadow(color: .black.opacity(0.5), radius: 3, x: 3, y: 3)
 
                             ProgressView(value: progress)
-                                .progressViewStyle(LinearProgressViewStyle(tint: .secondaryText.opacity(0.8))) // Matches Onboarding
+                                .progressViewStyle(LinearProgressViewStyle(tint: .secondaryText.opacity(0.8)))
                                 .frame(width: geometry.size.width * cardWidthMultiplier * 0.8)
                                 .scaleEffect(x: 1, y: 1.5, anchor: .center)
-                                .opacity(0.8) // Added opacity to match
+                                .opacity(0.8)
                         }
-                        // .padding(.bottom, 5) // Matches OnboardingView
-                        // .padding(.horizontal) // Matches OnboardingView
 
                         // Text label for progress (X/Y) and skip button
                         HStack(spacing: 4) {
-                             Text("(\(currentCardIndex + 1)/\(totalCards))") // Matches OnboardingView format
-                                 .font(Font.custom("SF Pro Text", size: 12).weight(.regular))
-                                 .foregroundColor(.secondaryText)
-                                 .opacity(0.8)
-                                 .shadow(color: .black.opacity(0.4), radius: 3, x: 3, y: 3) // Added shadow
+                            Text("(\(currentCardIndex + 1)/\(totalCards))")
+                                .font(Font.custom("SF Pro Text", size: 12).weight(.regular))
+                                .foregroundColor(.secondaryText)
+                                .opacity(0.8)
+                                .shadow(color: .black.opacity(0.4), radius: 3, x: 3, y: 3)
 
-                             Spacer()
+                            Spacer()
 
                             Button(action: {
                                 if currentCardIndex < totalCards - 1 {
                                     if canProceedToNextCard {
                                         connectionShowAgeError = false
                                         withAnimation { currentCardIndex += 1 }
-                                    } else if currentCardIndex == 0 { // Special case for age error on first card
-                                        connectionShowAgeError = true
+                                    } else if currentCardIndex == 0 {
+                                        // Show age error overlay
+                                        errorMessageTitle = "minimum age requirement"
+                                        connectionSaveError = "connection must be at least 18 years old"
+                                        connectionShowErrorOverlay = true
                                     }
                                 }
-
                             }) {
-                                 HStack(spacing: 4) {
-                                     Text("skip to next") // Text can be "skip ahead" or "skip to next"
-                                     Image(systemName: "arrow.right")
-                                 }
-                             }
-                             .font(Font.custom("SF Pro Text", size: 12).weight(.regular))
-                             .foregroundColor(.secondaryText)
-                             .opacity(currentCardIndex < totalCards - 1 ? 0.8 : 0.0) // Hide on last card
-                             .shadow(color: .black.opacity(0.4), radius: 3, x: 3, y: 3)
-                         }
-                         .frame(width: geometry.size.width * cardWidthMultiplier * 0.8)
+                                HStack(spacing: 4) {
+                                    Text("skip to next")
+                                    Image(systemName: "arrow.right")
+                                }
+                            }
+                            .font(Font.custom("SF Pro Text", size: 12).weight(.regular))
+                            .foregroundColor(.secondaryText)
+                            .opacity(currentCardIndex < totalCards - 1 ? 0.8 : 0.0)
+                            .shadow(color: .black.opacity(0.4), radius: 3, x: 3, y: 3)
+                        }
+                        .frame(width: geometry.size.width * cardWidthMultiplier * 0.8)
                     }
-                    // .padding(.bottom, 20) // Original padding, Onboarding has this Spacer(minLength: 20) after progress
-                    Spacer() // Matches OnboardingView
+                    .padding(.bottom, 20)
 
-                    // Card Content Area
+                    // Card Content Area - CENTERED
+                    Spacer()
+
                     Group {
                         switch currentCardIndex {
                             case 0:
@@ -208,35 +207,45 @@ struct AddConnectionView: View {
                                     )
                                 }
                             case 1:
-                                AddConnectionCardView(title: "connection profile", icon: Image(.addConnectionBackgroundIcon)) {
+                                AddConnectionCardView(
+                                    title: "connection profile",
+                                    icon: Image(.addConnectionBackgroundIcon)
+                                ) {
                                     AddConnectionImagesCardContent(
                                         connectionOcrImages: $connectionOcrImages,
-                                        connectionProfileImages: $connectionProfileImages,
+                                        connectionProfileImages: $connectionProfileImages
                                     )
                                 }
                             default:
                                 EmptyView()
                         }
                     }
-                    .frame(width: geometry.size.width * cardWidthMultiplier, height: geometry.size.height * cardHeightMultiplier)
+                    .frame(
+                        width: geometry.size.width * cardWidthMultiplier,
+                        height: geometry.size.height * cardHeightMultiplier
+                    )
 
-                    Spacer(minLength: 1) // Matches OnboardingView
+                    Spacer()
 
-                    // Navigation Buttons (Mirrored style from OnboardingView)
+                    // Navigation Buttons
                     HStack {
                         // Back Button
                         if currentCardIndex > 0 {
                             Button {
                                 withAnimation { currentCardIndex -= 1 }
                             } label: {
-                                Image(systemName: "arrow.left") // Consistent icon
+                                Image(systemName: "arrow.left")
                                     .padding()
-                                    .background(Circle().fill(Color.secondaryButton.opacity(0.6)).shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4)) // Mirrored style
+                                    .background(Circle().fill(Color.secondaryButton.opacity(0.6)).shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4))
                                     .foregroundColor(.primaryBg)
                             }
                         } else {
-                            // Hidden button to maintain layout, matches OnboardingView
-                            Button {} label: { Image(systemName: "arrow.left").padding().background(Circle().fill(Color.clear)) }.hidden()
+                            // Hidden button to maintain layout
+                            Button {} label: {
+                                Image(systemName: "arrow.left")
+                                    .padding()
+                                    .background(Circle().fill(Color.clear))
+                            }.hidden()
                         }
 
                         Spacer()
@@ -246,42 +255,36 @@ struct AddConnectionView: View {
                             hideKeyboard()
 
                             if isNextOrSaveActionBlocked {
-                                // --- ACTION IS BLOCKED BY VALIDATION ---
+                                // ACTION IS BLOCKED BY VALIDATION
                                 if currentCardIndex == 0 {
-                                    // If on Basics Card and "Next" action is blocked, it's due to age being nil
-                                    // (since the picker prevents selecting < 18, and canProceedToNextCard requires non-nil valid age).
-                                    connectionShowAgeError = true // This will make BasicsCardContent show the error text
+                                    // Show age error overlay
+                                    errorMessageTitle = "minimum age requirement"
+                                    connectionSaveError = "connection must be at least 18 years old"
+                                    connectionShowErrorOverlay = true
                                 } else if currentCardIndex == totalCards - 1 {
-                                    // If on the last card and "Save" action is blocked:
-                                    // Determine specific save error for the overlay.
-                                    if connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        connectionSaveError = "Connection name cannot be empty."
-                                        // If age is ALSO an issue (e.g., nil), ensure BasicsCardContent can show its error.
-                                        if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Checks if age is nil or <18
-                                            connectionShowAgeError = true
-                                        }
-                                    } else if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Name is fine, but age is nil (or <18 if somehow set).
-                                        connectionShowAgeError = true // Essential for BasicsCardContent's inline error
-                                        connectionSaveError = "Age must be selected and be 18 or older."
-                                        // Optionally, navigate back to the card with the age error:
-                                        // if currentCardIndex != 0 { // Only if not already on the basics card
-                                        //     withAnimation { currentCardIndex = 0 }
-                                        // }
+                                    // Determine specific save error for the overlay
+                                    let trimmedName = connectionName.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    if trimmedName.isEmpty || trimmedName == nameDefault {
+                                        errorMessageTitle = "missing information"
+                                        connectionSaveError = "please enter a name for your connection"
+                                    } else if !isAgeValidForSubmission {
+                                        errorMessageTitle = "minimum age requirement"
+                                        connectionSaveError = "connection must be at least 18 years old"
                                     } else {
-                                        connectionSaveError = "Please ensure all required fields are valid and try again."
+                                        errorMessageTitle = "validation error"
+                                        connectionSaveError = "please ensure all required fields are valid and try again"
                                     }
-                                    connectionShowErrorOverlay = true // Show the general error overlay
+                                    connectionShowErrorOverlay = true
                                 }
-                                // Add more conditions here if other cards have blocking validation
                             } else {
-                                // --- ACTION IS PERMITTED ---
-                                connectionShowAgeError = false // Clear age field error as we are proceeding/saving
-                                connectionSaveError = nil      // Clear general save error message
-                                connectionShowErrorOverlay = false // Hide general error overlay
+                                // ACTION IS PERMITTED
+                                connectionShowAgeError = false
+                                connectionSaveError = nil
+                                connectionShowErrorOverlay = false
 
-                                if currentCardIndex < totalCards - 1 { // Proceed to next card
+                                if currentCardIndex < totalCards - 1 {
                                     withAnimation { currentCardIndex += 1 }
-                                } else { // All checks passed for saving
+                                } else {
                                     saveConnection()
                                 }
                             }
@@ -290,9 +293,8 @@ struct AddConnectionView: View {
                                 .padding()
                                 .background(
                                     Circle()
-                                        // The visual appearance of being "disabled" is controlled here:
                                         .fill(
-                                            isNextOrSaveActionBlocked ? // Use the computed property
+                                            isNextOrSaveActionBlocked ?
                                             Color.secondaryText.opacity(0.2) : Color.secondaryButton.opacity(0.7)
                                         )
                                         .shadow(color: .black.opacity(0.4), radius: 4, x: 4, y: 4)
@@ -300,15 +302,16 @@ struct AddConnectionView: View {
                                 .foregroundColor(Color.primaryBg)
                         }
                     }
-                    .padding(.horizontal, geometry.size.width * ((1.0 - cardWidthMultiplier) / 2.0)) // Mirrored padding
+                    .padding(.horizontal, geometry.size.width * ((1.0 - cardWidthMultiplier) / 2.0))
+                    .padding(.bottom, 20)
 
-                    // Footer (Mirrored from OnboardingView)
+                    // Footer
                     VStack(spacing: 2) {
                         Text("we care about protecting your data")
                             .font(.footnote)
                             .foregroundColor(.secondaryText)
                             .opacity(0.6)
-                        Link(destination: URL(string: "https://example.com/privacy")!) { // Use a relevant URL
+                        Link(destination: URL(string: "https://example.com/privacy")!) {
                             Text("learn more here")
                                 .underline()
                                 .font(.footnote)
@@ -317,141 +320,137 @@ struct AddConnectionView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, (geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 0) + 10) // Mirrored padding
-
+                    .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 20)
 
                 }
-                .zIndex(2)// End Main VStack
-                .disabled(connectionIsSaving) // Disable interaction while saving (same as before)
+                .zIndex(2)
+                .disabled(connectionIsSaving)
 
-                // Saving Progress Overlay (same as before, generally fine)
+                // Saving Progress Overlay
                 if connectionIsSaving {
                     Color.black.opacity(0.4).ignoresSafeArea()
-                    ProgressView("saving...") // Changed text slightly
+                    ProgressView("saving...")
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .padding()
                         .background(Color.black.opacity(0.6))
                         .foregroundColor(.white)
                         .cornerRadius(10)
+                        .zIndex(5)
                 }
 
-                // Error Overlay (Mirrored style from OnboardingView's error overlay)
+                // Error Overlay
                 if connectionShowErrorOverlay {
-                    Color.black.opacity(0.5)
-                        .ignoresSafeArea()
-                        .transition(.opacity)
-                        .onTapGesture { connectionShowErrorOverlay = false }
-
-                    VStack {
-                        Spacer()
-                        VStack(spacing: 15) {
-                             Image(systemName: "exclamationmark.triangle.fill")
-                                 .font(.system(size: 40)) // Matched size
-                                 .foregroundColor(.red)
-                             Text("Error Saving Connection") // Title
-                                 .font(.headline).foregroundColor(.primaryText)
-                             Text(connectionSaveError ?? "An unknown error occurred. Please try again.") // Message
-                                 .font(.footnote).foregroundColor(.secondaryText)
-                                 .multilineTextAlignment(.center).padding(.horizontal)
-                             Button("Dismiss") {
-                                 connectionShowErrorOverlay = false
-                             }
-                                 .padding(.vertical, 10)
-                                 .padding(.horizontal, 20)
-                                 .background(Color.red.opacity(0.8)) // Matched style
-                                 .foregroundColor(.white)
-                                 .clipShape(Capsule())
-                                 .padding(.top)
-                        }
-                        .padding(EdgeInsets(top: 30, leading: 20, bottom: 20, trailing: 20))
-                        .background(RoundedRectangle(cornerRadius: 15).fill(Color.cardBg))
-                        .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 5) // Matched shadow
-                        .padding(.horizontal, 40)
-                        Spacer()
-                    }
-                    .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+                    errorOverlay
                 }
             } // End ZStack
+            .background(Color.clear)
+            .offset(x: sideMenuManager.isMenuOpen ? self.menuWidthValue : CGFloat(0)) //
+            .animation(.easeInOut, value: sideMenuManager.isMenuOpen)
+            .disabled(sideMenuManager.isMenuOpen)
             .ignoresSafeArea(.keyboard)
             .navigationBarHidden(true)
             .onTapGesture { hideKeyboard() }
         } // End GeometryReader
     }
 
+    // MARK: - Error Overlay View
+    private var errorOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+                .transition(.opacity)
+                .onTapGesture {
+                    connectionShowErrorOverlay = false
+                }
+                .zIndex(3)
 
+            VStack {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.red)
+                        .shadow(color: Color.accent1.opacity(0.7),
+                                radius: 8,
+                                x: 0,
+                                y: 4)
+
+                    Text(errorMessageTitle)
+                        .font(.headline)
+                        .foregroundColor(.primaryText)
+
+                    Divider()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 2)
+                        .background(Color.accent1)
+                        .padding(.horizontal, 15)
+                        .opacity(0.4)
+                        .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
+
+                    Text(connectionSaveError ?? "an unknown error occurred")
+                        .font(.footnote)
+                        .foregroundColor(.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    Button("dismiss") {
+                        connectionShowErrorOverlay = false
+                        connectionShowAgeError = false
+                    }
+                    .font(.body)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color.red.opacity(0.6))
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+                    .padding(.top)
+                }
+                .padding(EdgeInsets(top: 30, leading: 20, bottom: 20, trailing: 20))
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color.cardBg)
+                        .shadow(color: .black.opacity(0.8), radius: 10, x: 2, y: 5)
+                )
+                .padding(.horizontal, 30)
+                Spacer()
+            }
+            .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+            .zIndex(4)
+        }.zIndex(4)
+    }
 
     // MARK: - Actions
 
-    func attemptProceedOrSave() {
-        hideKeyboard()
-
-        if currentCardIndex < totalCards - 1 { // --- Trying to go "Next" ---
-            if canProceedToNextCard {
-                connectionShowAgeError = false // Clear error if proceeding
-                withAnimation { currentCardIndex += 1 }
-            } else {
-                // Cannot proceed. If on card 0, it's because age is nil (picker prevents <18).
-                if currentCardIndex == 0 {
-                    connectionShowAgeError = true // This will trigger the "you must be at least 18" if age is nil
-                                        // because BasicsCardContent checks: (showAgeError && !(age ?? 0 >= 18))
-                                        // If age is nil, !(nil ?? 0 >= 18) becomes !(false) which is true.
-                }
-                // Add other handling here if there are other reasons to not proceed on other cards.
-            }
-        } else { // --- Trying to "Save" (on the last card) ---
-            if canSaveChanges {
-                connectionShowAgeError = false // Clear age error if saving
-                connectionSaveError = nil      // Clear general save error
-                connectionShowErrorOverlay = false // Hide overlay
-                saveConnection()
-            } else {
-                // Cannot save. Determine reason and set appropriate error messages.
-                if connectionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    connectionSaveError = "Connection name cannot be empty."
-                    // If age is ALSO an issue (e.g., nil), ensure BasicsCardContent can show it.
-                    if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Checks if age is nil or < 18
-                        connectionShowAgeError = true
-                    }
-                } else if !(connectionAge != nil && connectionAge ?? 0 >= 18) { // Name is fine, but age is nil or < 18.
-                    connectionShowAgeError = true // This is key for BasicsCardContent to show its error
-                    connectionSaveError = "Age must be selected and be 18 or older." // Overlay message
-                    // Optionally, navigate back to the card with the age error:
-                    // if currentCardIndex != 0 { // Only if not already on the basics card
-                    //     withAnimation { currentCardIndex = 0 }
-                    // }
-                } else {
-                    // Some other validation for canSaveChanges failed.
-                    connectionSaveError = "Please ensure all required fields are valid and try again."
-                }
-                connectionShowErrorOverlay = true // Show the general error overlay
-            }
-        }
-    }
-
     func clearAllConnectionDataAndDismiss() {
         // Reset all @State variables to their initial values
-        connectionName = ""
+        connectionName = nameDefault
         connectionAge = nil
-        connectionContextBlock = ""
+        connectionContextBlock = textEditorDefault
         connectionOcrImages = []
         connectionProfileImages = []
 
-        currentCardIndex = 0 // Reset card index
+        currentCardIndex = 0
         connectionShowAgeError = false
         connectionSaveError = nil
         connectionShowErrorOverlay = false
-        connectionIsSaving = false // Just in case
+        connectionIsSaving = false
 
-        dismiss() // Dismiss the view
+        dismiss()
     }
 
-
     func saveConnection() {
+        // Check for valid auth token
+        guard let token = authManager.token, let userId = authManager.userId else {
+            errorMessageTitle = "authentication error"
+            connectionSaveError = "you must be logged in to save a connection"
+            connectionShowErrorOverlay = true
+            return
+        }
+
         print("Attempting to save connection...")
         connectionIsSaving = true
-        connectionSaveError = nil // Clear previous errors
-        connectionShowErrorOverlay = false // Hide error overlay
-
+        connectionSaveError = nil
+        connectionShowErrorOverlay = false
 
         let nameForConnection = self.connectionName
 
@@ -472,25 +471,25 @@ struct AddConnectionView: View {
             print("Sending Connection JSON payload: \(jsonString)")
         }
 
-        // --- Replace with your actual backend URL for saving connections ---
-        guard let url = URL(string: "YOUR_SAVE_CONNECTION_ENDPOINT_HERE") else { // <<-- IMPORTANT
+        // Use the proper backend URL for saving connections
+        #if DEBUG
+        let baseURL = "https://staging-api.yourbackend.com/api"
+        #else
+        let baseURL = "https://api.yourbackend.com/api"
+        #endif
+
+        guard let url = URL(string: "\(baseURL)/connections/create") else {
             handleSaveResult(.failure(NSError(domain: "URL", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid API endpoint for saving connection."])))
             return
         }
-        // --- ---
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = authManager.token {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.httpBody = encodedPayload
 
-        URLSession.shared.dataTask(with: request) {
- data,
- response,
- error in
+        URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let networkError = error {
                     self.handleSaveResult(.failure(networkError))
@@ -505,22 +504,35 @@ struct AddConnectionView: View {
                 print("Save Connection Received HTTP Status: \(httpResponse.statusCode)")
 
                 guard (200...299).contains(httpResponse.statusCode) else {
+                    // Handle specific HTTP status codes
+                    if httpResponse.statusCode == 401 {
+                        // Token might be expired, try to refresh
+                        self.authManager.refreshAccessToken { success in
+                            if success {
+                                // Retry save with new token
+                                self.saveConnection()
+                            } else {
+                                self.handleSaveResult(.failure(NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Session expired. Please log in again."])))
+                            }
+                        }
+                        return
+                    }
+
                     var serverMsg = "Server error (\(httpResponse.statusCode))."
                     if let responseData = data,
- let errorString = String(data: responseData, encoding: .utf8),
- !errorString.isEmpty {
+                       let errorString = String(data: responseData, encoding: .utf8),
+                       !errorString.isEmpty {
                         serverMsg += " Details: \(errorString)"
                     }
                     self.handleSaveResult(.failure(NSError(domain: "Server", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: serverMsg])))
                     return
                 }
 
-                // --- SUCCESS ---
-                // Optionally decode response if needed
+                // SUCCESS
                 if let responseData = data {
                     struct SaveConnectionResponse: Decodable {
                         let connection_id: String?
-                    } // Make id optional
+                    }
                     do {
                         let decodedResponse = try JSONDecoder().decode(
                             SaveConnectionResponse.self,
@@ -533,7 +545,7 @@ struct AddConnectionView: View {
                                     name: nameForConnection)
                                 )
                             )
-                            print("Connection saved successfully. Received Connection ID: \(decodedResponse.connection_id ?? "N/A")")
+                            print("Connection saved successfully. Received Connection ID: \(newConnectionId)")
                         } else {
                             print("Connection saved successfully (no data in response).")
                             self.handleSaveResult(.success(
@@ -545,13 +557,16 @@ struct AddConnectionView: View {
                     } catch {
                          print("Warning: Could not decode save connection response: \(error.localizedDescription)")
                          // Proceed with success even if decoding response fails, as 2xx means server accepted it
+                         self.handleSaveResult(.success(
+                            (id: nil, name: nameForConnection))
+                         )
                     }
                 } else {
                     print("Connection saved successfully (no data in response).")
+                    self.handleSaveResult(.success(
+                        (id: nil, name: nameForConnection))
+                    )
                 }
-                self.handleSaveResult(.success(
-                    (id: nil, name: nameForConnection))
-                ) // Pass a void success
             }
         }.resume()
     }
@@ -562,33 +577,44 @@ struct AddConnectionView: View {
         switch result {
         case .success(let connectionDetails):
             print("Connection saved successfully! Dismissing view.")
-                if let id = connectionDetails.id, !connectionDetails.name.isEmpty {
-                    connectionManager
-                        .setActiveConnection(
-                            connectionId: id,
-                            connectionName: connectionDetails.name
-                        )
-                } else {
-                    print("Connection saved, but no connection ID provided")
-                }
-            // connectionManager.connectionAddedSuccessfully() // If you have such a method
-            dismiss() // Dismiss the view on successful save
-            // No success overlay needed as the view dismisses. If one were desired, it would be set here.
+            if let id = connectionDetails.id, !connectionDetails.name.isEmpty {
+                connectionManager
+                    .setActiveConnection(
+                        connectionId: id,
+                        connectionName: connectionDetails.name
+                    )
+            } else {
+                print("Connection saved, but no connection ID provided")
+            }
+            dismiss()
         case .failure(let error):
             print("Save Error: \(error.localizedDescription)")
-                connectionSaveError = error.localizedDescription
-            connectionShowErrorOverlay = true // Show the mirrored error overlay
+            errorMessageTitle = "save failed"
+            connectionSaveError = error.localizedDescription
+            connectionShowErrorOverlay = true
         }
     }
 
-}
+    @ViewBuilder
+    private var dimmingOverlayWhenMenuIsOpen: some View {
+        if sideMenuManager.isMenuOpen {
+            Color.black.opacity(0.6)
+                .edgesIgnoringSafeArea(.all)
+                .zIndex(3)
+                .onTapGesture { sideMenuManager.closeSideMenu() } //
+                .transition(.opacity)
+        }
+    }
 
-// NavigationButtonStyle from AddConnectionView.swift (ensure it's defined or accessible)
-// If it's identical to OnboardingView's implied style, we might not need a separate one,
-// but if it was defined in AddConnectionView, make sure it's either moved to a shared location
-// or its logic is incorporated directly.
-// For this refactor, I've directly applied styles similar to OnboardingView's buttons.
-// If `NavigationButtonStyle` was a distinct, desired style, you'd ensure it's used consistently.
+    @ViewBuilder
+    private var sideMenuPresentation: some View {
+        if sideMenuManager.isMenuOpen {
+            SideMenuView()
+                .transition(.move(edge: .leading))
+                .zIndex(4)
+        }
+    }
+}
 
 // MARK: - Preview
 #if DEBUG
@@ -611,7 +637,7 @@ struct AddConnectionView_Previews: PreviewProvider {
         AddConnectionView()
         .environmentObject(ConnectionManager())
         .environmentObject(AuthManager())
+        .environmentObject(SideMenuManager())
     }
 }
-
 #endif

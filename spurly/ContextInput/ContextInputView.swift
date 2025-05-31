@@ -126,7 +126,8 @@ struct ContextInputView: View {
             .sheet(isPresented: $connectionManager.isNewConnectionOpen) { //
                 AddConnectionView()
                     .environmentObject(authManager) //
-                    .environmentObject(connectionManager) //
+                    .environmentObject(connectionManager)
+                    .environmentObject(sideMenuManager)//
             }
             .sheet(isPresented: $spurManager.showSpursView) { //
                 SpursView() //

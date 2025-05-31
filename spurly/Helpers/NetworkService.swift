@@ -49,7 +49,7 @@ class NetworkService {
     static let shared = NetworkService()
 
     // Configuration
-    private let baseURL: String
+    let baseURL: String
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
@@ -59,12 +59,9 @@ class NetworkService {
     private let retryDelay: TimeInterval = 1.0
 
     private init() {
-        // Use environment-based configuration
-        #if DEBUG
-        self.baseURL = "https://staging-api.yourbackend.com/api"
-        #else
-        self.baseURL = "https://api.yourbackend.com/api"
-        #endif
+
+        //Configure bsaeURL
+        baseURL = "myapi.com"
 
         // Configure session with timeout
         let configuration = URLSessionConfiguration.default
@@ -83,6 +80,7 @@ class NetworkService {
     // MARK: - Public Methods
 
     // MARK: Firebase Auth Methods
+
 
     func createAccountWithFirebase(requestData: CreateAccountRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         performRequest(

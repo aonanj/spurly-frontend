@@ -1,3 +1,10 @@
+//
+//  AddConnectionModels.swift
+//
+//  Author: phaeton order llc
+//  Target: spurly
+//
+
 import SwiftUI
 import UIKit
 import PhotosUI
@@ -9,13 +16,13 @@ struct AddConnectionPayload: Codable {
     var connectionOcrImages: [UIImage]?
     var connectionProfileImages: [UIImage]?
 
-    // CodingKeys remain the same, but we will handle encoding/decoding manually for images.
+    // CodingKeys remain the same, but we will handle encoding/decoding manually for images
     enum CodingKeys: String, CodingKey {
-        case connectionName
-        case connectionAge
-        case connectionContextBlock
-        case connectionOcrImages
-        case connectionProfileImages
+        case connectionName = "connection_name"
+        case connectionAge = "connection_age"
+        case connectionContextBlock = "connection_context_block"
+        case connectionOcrImages = "connection_ocr_images"
+        case connectionProfileImages = "connection_profile_images"
     }
 
     // Custom initializer
@@ -56,55 +63,42 @@ struct AddConnectionPayload: Codable {
         try container.encodeIfPresent(connectionAge, forKey: .connectionAge)
         try container.encodeIfPresent(connectionContextBlock, forKey: .connectionContextBlock)
 
-        // Encode OCR images
+        // Encode OCR images with compression
         if let ocrImages = connectionOcrImages {
-            // You can choose .pngData() or .jpegData(compressionQuality:)
-            let ocrImageDataArray = ocrImages.compactMap { $0.pngData() }
+            let ocrImageDataArray = ocrImages.compactMap { $0.jpegData(compressionQuality: 0.8) }
             try container.encode(ocrImageDataArray, forKey: .connectionOcrImages)
         }
 
-        // Encode Profile images
+        // Encode Profile images with compression
         if let profileImages = connectionProfileImages {
-            // You can choose .pngData() or .jpegData(compressionQuality:)
-            let profileImageDataArray = profileImages.compactMap { $0.pngData() }
+            let profileImageDataArray = profileImages.compactMap { $0.jpegData(compressionQuality: 0.8) }
             try container.encode(profileImageDataArray, forKey: .connectionProfileImages)
         }
     }
 }
 
 struct AddConnectionResponse: Codable {
-    var user_id: String
-    var token: String
+    var connectionId: String
+    var message: String?
+
+    enum CodingKeys: String, CodingKey {
+        case connectionId = "connection_id"
+        case message
+    }
 }
 
-import SwiftUI
-import PhotosUI
+// MARK: - Photo Picker View
 
 struct PhotoPickerView: View {
     @Binding var selectedImages: [UIImage]
     @State private var selectedItems: [PhotosPickerItem] = []
     private let maxPhotos = 4
     let label: String
+    let photoPickerToolHelp: String
 
     var body: some View {
         VStack(spacing: 20) {
-            // Photo picker button
-            PhotosPicker(
-                selection: $selectedItems,
-                maxSelectionCount: maxPhotos,
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                Label("\(label) (\(selectedImages.count)/\(maxPhotos))",
-                      systemImage: "photo.on.rectangle.angled")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .onChange(of: selectedItems) { newItems in
-                loadImages(from: newItems)
-            }
+
 
             // Thumbnails grid
             if !selectedImages.isEmpty {
@@ -119,15 +113,51 @@ struct PhotoPickerView: View {
                     .padding()
                 }
             } else {
-                Text("No photos selected")
-                    .foregroundColor(.gray)
-                    .padding()
+                VStack {
+
+                    PhotosPicker(
+                        selection: $selectedItems,
+                        maxSelectionCount: maxPhotos,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ) {
+                        Label("\(label) (\(selectedImages.count)/\(maxPhotos))", systemImage: "photo.on.rectangle.angled")
+                            .font(.custom("SF Pro Text", size: 14).weight(.regular))
+                            .padding(.horizontal)
+                            .padding(.vertical, 12)
+                            .background(Color.primaryButton)
+                            .foregroundColor(Color.tertiaryButton)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(
+                                        Color.highlight.opacity(0.4),
+                                        lineWidth: 2
+                                    )
+                            )
+                            .shadow(
+                                color: Color.primaryText.opacity(0.55),
+                                radius: 4,
+                                x: 2,
+                                y: 5
+                            )
+                    }
+                    .onChange(of: selectedItems) { newItems in
+                        loadImages(from: newItems)
+                    }
+
+                    Text(photoPickerToolHelp)
+                        .font(.footnote)
+                        .foregroundColor(.secondaryText)
+                        .padding(.top, 5)
+                        .shadow(color: .brandColor.opacity(0.42), radius: 4, x: 2, y: 4)
+                        .frame(maxWidth: .infinity)
+                }
             }
 
             Spacer()
         }
         .navigationTitle(label)
-        .padding()
     }
 
     // Load images from PhotosPickerItem
@@ -158,7 +188,8 @@ struct PhotoPickerView: View {
     }
 }
 
-// Thumbnail view with delete button
+// MARK: - Thumbnail View
+
 struct ThumbnailView: View {
     let image: UIImage
     let onDelete: () -> Void
@@ -169,7 +200,7 @@ struct ThumbnailView: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 100, height: 100)
+                .frame(width: 70, height: 70)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
@@ -182,28 +213,9 @@ struct ThumbnailView: View {
                     .foregroundColor(.white)
                     .background(Color.red)
                     .clipShape(Circle())
+                    .opacity(0.6)
             }
             .offset(x: 8, y: -8)
         }
     }
 }
-
-//// Example usage in a ContentView
-//struct ContentView: View {
-//    var body: some View {
-//        NavigationView {
-//            PhotoPickerView()
-//        }
-//    }
-//}
-//
-//// For UIKit integration, here's a UIViewController wrapper
-//class PhotoPickerViewController: UIHostingController<PhotoPickerView> {
-//    init() {
-//        super.init(rootView: PhotoPickerView(selectedImages: <#Binding<[UIImage]>#>, label: <#String#>))
-//    }
-//
-//    @MainActor required dynamic init?(coder aDecoder: NSCoder) {
-//        fatalError("init(coder:) has not been implemented")
-//    }
-//}

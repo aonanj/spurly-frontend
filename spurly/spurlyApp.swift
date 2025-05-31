@@ -68,21 +68,22 @@ struct RootView: View {
     @EnvironmentObject var sideMenuManager: SideMenuManager
 
     var body: some View {
+        ContextInputView()
 
-        if authManager.isAuthenticated {
-            if authManager.isLoadingProfile {
-                ProgressView("loading profile...")
-            } else if authManager.userProfileExists == true {
-                ContextInputView()
-            } else if authManager.userProfileExists == false {
-                OnboardingView(authManager: authManager)
-                    .environmentObject(authManager)
-            } else {
-                ProgressView("checking authentication state...")
-            }
-        } else {
-            LoginLandingView()
-        }
+//        if authManager.isAuthenticated {
+//            if authManager.isLoadingProfile {
+//                ProgressView("loading profile...")
+//            } else if authManager.userProfileExists == true {
+//                ContextInputView()
+//            } else if authManager.userProfileExists == false {
+//                OnboardingView(authManager: authManager)
+//                    .environmentObject(authManager)
+//            } else {
+//                ProgressView("checking authentication state...")
+//            }
+//        } else {
+//            LoginLandingView()
+//        }
     }
 }
 

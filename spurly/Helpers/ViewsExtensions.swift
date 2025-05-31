@@ -71,6 +71,12 @@ extension Image {
         _spurlyBannerLogo
             .resizable()
             .scaledToFit()
+            .shadow(
+                color: .primaryText.opacity(0.5),
+                radius: 5,
+                x: 3,
+                y: 3
+            )
     }
 
     static var menuIcon: some View {
