@@ -24,9 +24,26 @@ struct ErrorOverlayView: View {
     /// The detailed error message.
     let errorMessage: String
 
+    let autoDismissDelay: Double?
+
     /// An optional action to perform when the overlay is dismissed.
     /// This can be used for cleanup tasks like resetting state variables or calling ViewModel methods.
     let onDismiss: (() -> Void)?
+
+    init(
+        isPresented: Binding<Bool>,
+        errorTitle: String,
+        errorMessage: String,
+        autoDismissDelay: Double? = 5.0,
+        onDismiss: (() -> Void)? = nil
+    ) {
+        _isPresented = isPresented
+        self.errorTitle = errorTitle
+        self.errorMessage = errorMessage
+        self.autoDismissDelay = autoDismissDelay
+        self.onDismiss = onDismiss
+    }
+
 
     // MARK: - Body
 
@@ -105,10 +122,24 @@ struct ErrorOverlayView: View {
             }
             // Animation for the appearance/disappearance of the error content.
             .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+            .onAppear {
+                if let delay = autoDismissDelay {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                        if isPresented {
+                           dismissOverlay()
+                        }
+                    }
+                }
+            }
             .zIndex(4) // Ensures the error message content is above the semi-transparent background.
         }
         .zIndex(4) // Ensures the entire overlay is above other content in the calling view.
                    // You might adjust this zIndex based on your view hierarchy.
+    }
+
+    private func dismissOverlay() {
+        isPresented = false
+        onDismiss?()
     }
 }
 

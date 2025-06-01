@@ -171,36 +171,51 @@ struct OnboardingView: View {
 
                 // Success Overlay
                 if showSuccessOverlay {
-                    successOverlay
+                    SuccessOverlayView(
+                        isPresented: $showSuccessOverlay,
+                        message: successMessage
+                    )
                 }
 
                 // Error Overlay
-                if showErrorOverlay {
-                    if showAgeError {
-                        ErrorOverlayView(
-                            isPresented: $showAgeError,
-                            errorTitle: "minimum age requirement",
-                            errorMessage: "spurly is only for use by those 18 years and up",
-                            onDismiss: {
-                                if viewModel.isAgeError {
-                                    viewModel.isAgeError = false
-                                }
+                if showAgeError {
+                    ErrorOverlayView(
+                        isPresented: $showAgeError,
+                        errorTitle: "minimum age requirement",
+                        errorMessage: "spurly is only for use by those 18 years and up",
+                        onDismiss: {
+                            if viewModel.isAgeError {
+                                viewModel.isAgeError = false
                             }
-                        )
-                    }
-                    else if showNameError {
-                        ErrorOverlayView(
-                            isPresented: $showNameError,
-                            errorTitle: "name requirement",
-                            errorMessage: "please enter a name to use spurly",
-                            onDismiss: {
-                                if viewModel.isNameError {
-                                    viewModel.isNameError = false
-                                }
+                            showErrorOverlay = false
+                        }
+                    )
+                }
+                if showNameError {
+                    ErrorOverlayView(
+                        isPresented: $showNameError,
+                        errorTitle: "name requirement",
+                        errorMessage: "please enter a name to use spurly",
+                        onDismiss: {
+                            if viewModel.isNameError {
+                                viewModel.isNameError = false
                             }
-                        )
+                            showErrorOverlay = false
+                        }
+                    )
+                }
 
-                    }
+                if showErrorOverlay {
+                    ErrorOverlayView(
+                        isPresented: $showErrorOverlay,
+                        errorTitle: errorMessageTitle,
+                        errorMessage: errorMessage,
+                        onDismiss: {
+                            if viewModel.isError {
+                                viewModel.isError = false
+                            }
+                        }
+                    )
                 }
 
             } // End main ZStack
@@ -218,67 +233,6 @@ struct OnboardingView: View {
                 print("OnboardingView: Profile created successfully")
             }
         }
-    }
-
-    // MARK: - View Components
-
-    private var successOverlay: some View {
-        ZStack {
-            Color.primaryText.opacity(0.5)
-                .ignoresSafeArea()
-                .transition(.opacity)
-                .onTapGesture {
-                    showSuccessOverlay = false
-                }
-                .zIndex(3)
-
-            VStack {
-                Spacer()
-
-                Image(systemName: "staroflife.fill")
-                    .font(.system(size: 35))
-                    .foregroundColor(.spurlyBrand)
-                    .shadow(color: Color.accent1.opacity(0.7),
-                            radius: 8,
-                            x: 0,
-                            y: 4)
-
-                Spacer()
-
-                Divider()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 2)
-                    .background(Color.accent1)
-                    .padding(.horizontal, 15)
-                    .opacity(0.4)
-                    .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
-
-                Text(successMessage)
-                    .font(.headline)
-                    .foregroundColor(.primaryText)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.cardBg)
-                            .shadow(
-                                color: Color.accent1.opacity(0.7),
-                                radius: 8,
-                                x: 2,
-                                y: 4
-                            )
-                    )
-                    .padding(.horizontal, 40)
-                Spacer()
-            }
-            .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    showSuccessOverlay = false
-                }
-            }
-            .zIndex(4)
-        }.zIndex(4)
     }
 
     // MARK: - Methods
@@ -358,6 +312,8 @@ class OnboardingViewModel: ObservableObject {
     }
 
     func submitOnboarding(data: OnboardingPayload, completion: @escaping (Bool, String?) -> Void) {
+
+
         guard let token = authManager.token, let userId = authManager.userId else {
             completion(false, "User is not authenticated. Cannot complete onboarding.")
             return
@@ -371,6 +327,7 @@ class OnboardingViewModel: ObservableObject {
             age: data.age ?? 0,
             userContextBlock: data.user_context_block ?? ""
         )
+
 
         NetworkService.shared.submitOnboardingProfile(requestData: requestData, authToken: token) { [weak self] result in
             guard let self = self else { return }
