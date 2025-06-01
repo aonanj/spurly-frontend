@@ -5,12 +5,15 @@ struct OnboardingView: View {
     @EnvironmentObject var authManager: AuthManager
     @StateObject private var viewModel: OnboardingViewModel
 
+    
+
     @State private var showAgeError = false
+    @State private var showNameError = false
     @State private var age: Int? = nil
     @State private var showSuccessOverlay = false
     @State private var successMessage = ""
     @State private var errorMessageTitle = ""
-    @State private var showErrorOverlay = false
+    @State private var showErrorOverlay: Bool = false
     @State private var errorMessage = ""
     @State private var name: String = "what do you go by"
     @State private var textEditorText: String = "... spurly can keep things relevant to you. here you can add your interests, job, hometown, relationship type, and anything else that could help spurly help you find your own words quicker ..."
@@ -21,6 +24,13 @@ struct OnboardingView: View {
     var isAgeValidForSubmission: Bool {
         guard let currentAge = age else { return false }
         return currentAge >= 18
+    }
+
+    var isNameValid: Bool {
+        // Age must be selected (not nil) AND be >= 18 for saving, plus name must be present.
+        let nameIsValid = (!name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                         (name != nameDefault) && (name != ""))
+        return nameIsValid
     }
 
     let screenHeight = UIScreen.main.bounds.height
@@ -90,7 +100,7 @@ struct OnboardingView: View {
                             } else {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 45))
-                                    .if(isAgeValidForSubmission) { view in
+                                    .if(isAgeValidForSubmission && isNameValid) { view in
                                         view.foregroundStyle(
                                             LinearGradient(
                                                 colors: [.highlight, .primaryButton, .highlight],
@@ -105,7 +115,7 @@ struct OnboardingView: View {
                                             y: 5
                                         )
                                     }
-                                    .if(!isAgeValidForSubmission) { view in
+                                    .if(!isAgeValidForSubmission || !isNameValid) { view in
                                         view
                                             .foregroundColor(.spurlySecondaryText.opacity(0.2))
                                             .shadow(
@@ -166,7 +176,31 @@ struct OnboardingView: View {
 
                 // Error Overlay
                 if showErrorOverlay {
-                    errorOverlay
+                    if showAgeError {
+                        ErrorOverlayView(
+                            isPresented: $showAgeError,
+                            errorTitle: "minimum age requirement",
+                            errorMessage: "spurly is only for use by those 18 years and up",
+                            onDismiss: {
+                                if viewModel.isAgeError {
+                                    viewModel.isAgeError = false
+                                }
+                            }
+                        )
+                    }
+                    else if showNameError {
+                        ErrorOverlayView(
+                            isPresented: $showNameError,
+                            errorTitle: "name requirement",
+                            errorMessage: "please enter a name to use spurly",
+                            onDismiss: {
+                                if viewModel.isNameError {
+                                    viewModel.isNameError = false
+                                }
+                            }
+                        )
+
+                    }
                 }
 
             } // End main ZStack
@@ -247,72 +281,6 @@ struct OnboardingView: View {
         }.zIndex(4)
     }
 
-    private var errorOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-                .transition(.opacity)
-                .onTapGesture {
-                    showErrorOverlay = false
-                }
-                .zIndex(3)
-
-            VStack {
-                Spacer()
-                VStack(spacing: 12) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.red)
-                        .shadow(color: Color.accent1.opacity(0.7),
-                                radius: 8,
-                                x: 0,
-                                y: 4)
-
-                    Text(errorMessageTitle)
-                        .font(.headline)
-                        .foregroundColor(.primaryText)
-
-                    Divider()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 2)
-                        .background(Color.accent1)
-                        .padding(.horizontal, 15)
-                        .opacity(0.4)
-                        .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
-
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundColor(.secondaryText)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-
-                    Button("dismiss") {
-                        showErrorOverlay = false
-                        showAgeError = false
-                        viewModel.clearError()
-                    }
-                    .font(.body)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(Color.red.opacity(0.6))
-                    .foregroundColor(.white)
-                    .clipShape(Capsule())
-                    .padding(.top)
-                }
-                .padding(EdgeInsets(top: 30, leading: 20, bottom: 20, trailing: 20))
-                .background(
-                    RoundedRectangle(cornerRadius: 15)
-                        .fill(Color.cardBg)
-                        .shadow(color: .black.opacity(0.8), radius: 10, x: 2, y: 5)
-                )
-                .padding(.horizontal, 30)
-                Spacer()
-            }
-            .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-            .zIndex(4)
-        }.zIndex(4)
-    }
-
     // MARK: - Methods
 
     private func submit() {
@@ -323,10 +291,25 @@ struct OnboardingView: View {
             errorMessageTitle = "minimum age requirement"
             errorMessage = "you must be at least 18 to use spurly"
             showErrorOverlay = true
+            viewModel.isError = true
+            viewModel.isAgeError = true
+            return
+        }
+
+        guard isNameValid else {
+            showNameError = true
+            errorMessageTitle = "please enter a name name cannot be blank"
+            errorMessage = "name cannot be blank. please enter a name to use with spurly"
+            showErrorOverlay = true
+            viewModel.isError = true
+            viewModel.isNameError = true
             return
         }
 
         showAgeError = false
+        showNameError = false
+        showErrorOverlay = false
+        viewModel.isError = false
 
         // Validate inputs
         let finalName = name.isEmpty ? nameDefault : name
@@ -362,6 +345,11 @@ struct OnboardingView: View {
 class OnboardingViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
+
+
+    @Published var isError: Bool = false
+    @Published var isAgeError: Bool = false
+    @Published var isNameError: Bool = false
 
     private let authManager: AuthManager
 
@@ -418,6 +406,16 @@ class OnboardingViewModel: ObservableObject {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    func triggerError() {
+        isError = true
+    }
+
+    func clearAllErrors() {
+        isError = false
+        isAgeError = false
+        isNameError = false
     }
 }
 

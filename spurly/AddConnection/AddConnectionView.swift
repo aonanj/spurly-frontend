@@ -51,7 +51,7 @@ struct AddConnectionView: View {
     var canProceedToNextCard: Bool {
         if currentCardIndex == 0 { // Basics Card
             // Age must be selected (not nil) AND be >= 18 to proceed from the first card
-            return isAgeValidForSubmission
+            return canSaveChanges
         }
         return true // Allow proceeding from other cards freely
     }
@@ -87,7 +87,7 @@ struct AddConnectionView: View {
     var body: some View {
         GeometryReader { geometry in
 
-            ZStack {
+            ZStack(alignment: .leading) {
                 // Background (Consistent with OnboardingView)
                 Color.tappablePrimaryBg
                     .onTapGesture {
@@ -97,43 +97,25 @@ struct AddConnectionView: View {
 
                 Image.tappableBgIcon
                     .frame(width: screenWidth * 1.8, height: screenHeight * 1.8)
-                    .position(x: screenWidth / 2, y: screenHeight * 0.5)
+                    .position(x: screenWidth / 2, y: screenHeight * 0.52)
                     .zIndex(1)
 
                 // Main Content VStack
                 VStack(spacing: 0) {
                     // Header with buttons
-                    HStack {
-                        Button(action: {
-                            // Menu button action - could open side menu if needed
-                            sideMenuManager.toggleSideMenu()
-                        }) {
-                            Image.menuIcon
-                                .frame(width: 44, height: 44)
-                        }
-                        Spacer()
-
-                        Button(action: {
-                            clearAllConnectionDataAndDismiss()
-                        }) {
-                            Image.cancelAddConnectionIcon
-                                .frame(width: 35, height: 35)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : 20)
+                    headerView
 
                     // Logo and tagline
                     VStack(spacing: 5) {
                         Image.bannerLogo
+                            .padding(.horizontal)
                             .frame(height: screenHeight * 0.1)
 
                         Text.bannerTag
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal)
                     }
-                    .padding(.top, 10)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 15)
 
                     // Progress Indicator
                     VStack(alignment: .center, spacing: 5) {
@@ -258,24 +240,22 @@ struct AddConnectionView: View {
                                 // ACTION IS BLOCKED BY VALIDATION
                                 if currentCardIndex == 0 {
                                     // Show age error overlay
-                                    errorMessageTitle = "minimum age requirement"
-                                    connectionSaveError = "connection must be at least 18 years old"
-                                    connectionShowErrorOverlay = true
-                                } else if currentCardIndex == totalCards - 1 {
                                     // Determine specific save error for the overlay
                                     let trimmedName = connectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    if trimmedName.isEmpty || trimmedName == nameDefault {
+                                    if trimmedName.isEmpty || trimmedName == nameDefault || trimmedName == "" {
                                         errorMessageTitle = "missing information"
                                         connectionSaveError = "please enter a name for your connection"
+                                        print("TrimmedName: \(trimmedName)")
                                     } else if !isAgeValidForSubmission {
                                         errorMessageTitle = "minimum age requirement"
                                         connectionSaveError = "connection must be at least 18 years old"
-                                    } else {
+                                    }
+                                    connectionShowErrorOverlay = true
+                                } else if currentCardIndex == totalCards - 1 {
                                         errorMessageTitle = "validation error"
                                         connectionSaveError = "please ensure all required fields are valid and try again"
                                     }
                                     connectionShowErrorOverlay = true
-                                }
                             } else {
                                 // ACTION IS PERMITTED
                                 connectionShowAgeError = false
@@ -303,7 +283,7 @@ struct AddConnectionView: View {
                         }
                     }
                     .padding(.horizontal, geometry.size.width * ((1.0 - cardWidthMultiplier) / 2.0))
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 8)
 
                     // Footer
                     VStack(spacing: 2) {
@@ -323,8 +303,14 @@ struct AddConnectionView: View {
                     .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 20)
 
                 }
+                .background(Color.clear)
+                .offset(x: sideMenuManager.isMenuOpen ? self.menuWidthValue : CGFloat(0)) //
+                .animation(.easeInOut, value: sideMenuManager.isMenuOpen)
+                .disabled(sideMenuManager.isMenuOpen || connectionIsSaving)
                 .zIndex(2)
-                .disabled(connectionIsSaving)
+
+                dimmingOverlayWhenMenuIsOpen
+                sideMenuPresentation
 
                 // Saving Progress Overlay
                 if connectionIsSaving {
@@ -343,14 +329,27 @@ struct AddConnectionView: View {
                     errorOverlay
                 }
             } // End ZStack
-            .background(Color.clear)
-            .offset(x: sideMenuManager.isMenuOpen ? self.menuWidthValue : CGFloat(0)) //
-            .animation(.easeInOut, value: sideMenuManager.isMenuOpen)
-            .disabled(sideMenuManager.isMenuOpen)
             .ignoresSafeArea(.keyboard)
             .navigationBarHidden(true)
             .onTapGesture { hideKeyboard() }
         } // End GeometryReader
+    }
+
+    private var headerView: some View {
+        HStack { //
+            Button(action: { sideMenuManager.toggleSideMenu() }) { //
+                Image.menuIcon//
+            }.frame(width: 45, height: 45)
+            Spacer() //
+            Button(action: { clearAllConnectionDataAndDismiss() }) { //
+                Image.cancelAddConnectionIcon//
+            }
+            .frame(width: 45, height: 45)
+            .transition(.opacity.combined(with: .scale(scale: 0.9))) //
+            .shadow(color: .black.opacity(0.5), radius: 5, x: 3, y: 3) //
+        }
+        .padding(.horizontal) //
+        .animation(.easeInOut(duration: 0.2), value: connectionManager.currentConnectionId) //
     }
 
     // MARK: - Error Overlay View
@@ -419,6 +418,26 @@ struct AddConnectionView: View {
         }.zIndex(4)
     }
 
+    @ViewBuilder
+    private var dimmingOverlayWhenMenuIsOpen: some View {
+        if sideMenuManager.isMenuOpen {
+            Color.black.opacity(0.6)
+                .edgesIgnoringSafeArea(.all)
+                .zIndex(4)
+                .onTapGesture { sideMenuManager.closeSideMenu() } //
+                .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var sideMenuPresentation: some View {
+        if sideMenuManager.isMenuOpen {
+            SideMenuView()
+                .transition(.move(edge: .leading))
+                .zIndex(5)
+        }
+    }
+
     // MARK: - Actions
 
     func clearAllConnectionDataAndDismiss() {
@@ -440,7 +459,7 @@ struct AddConnectionView: View {
 
     func saveConnection() {
         // Check for valid auth token
-        guard let token = authManager.token, let userId = authManager.userId else {
+        guard let token = authManager.token, let _ = authManager.userId else {
             errorMessageTitle = "authentication error"
             connectionSaveError = "you must be logged in to save a connection"
             connectionShowErrorOverlay = true
@@ -592,26 +611,6 @@ struct AddConnectionView: View {
             errorMessageTitle = "save failed"
             connectionSaveError = error.localizedDescription
             connectionShowErrorOverlay = true
-        }
-    }
-
-    @ViewBuilder
-    private var dimmingOverlayWhenMenuIsOpen: some View {
-        if sideMenuManager.isMenuOpen {
-            Color.black.opacity(0.6)
-                .edgesIgnoringSafeArea(.all)
-                .zIndex(3)
-                .onTapGesture { sideMenuManager.closeSideMenu() } //
-                .transition(.opacity)
-        }
-    }
-
-    @ViewBuilder
-    private var sideMenuPresentation: some View {
-        if sideMenuManager.isMenuOpen {
-            SideMenuView()
-                .transition(.move(edge: .leading))
-                .zIndex(4)
         }
     }
 }

@@ -82,7 +82,7 @@ extension Image {
     static var menuIcon: some View {
         _menuIcon
             .foregroundColor(.primaryText)
-            .font(.system(size: 30))
+            .font(.system(size: 25))
             .shadow(
                 color: .primaryText.opacity(0.5),
                 radius: 5,
@@ -94,7 +94,7 @@ extension Image {
     static var connectionIcon: some View {
         _addConnection
             .foregroundColor(.primaryText)
-            .font(.system(size: 30))
+            .font(.system(size: 25))
             .shadow(
                 color: .primaryText.opacity(0.5),
                 radius: 5,
@@ -105,8 +105,8 @@ extension Image {
 
     static var cancelAddConnectionIcon: some View {
         _cancelAddConnectionIcon
-            .font(.system(size: 30))
             .foregroundColor(.primaryText)
+            .font(.system(size: 25))
             .shadow(
                 color: .primaryText.opacity(0.5),
                 radius: 5,

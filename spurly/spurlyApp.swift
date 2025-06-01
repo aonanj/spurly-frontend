@@ -68,13 +68,30 @@ struct RootView: View {
     @EnvironmentObject var sideMenuManager: SideMenuManager
 
     var body: some View {
-        ContextInputView()
+
+        OnboardingView(authManager: authManager)
+            .environmentObject(authManager)
+
+//        NavigationView {
+//            ContextInputView()
+//                .environmentObject(authManager)
+//                .environmentObject(spurManager)
+//                .environmentObject(connectionManager)
+//                .environmentObject(sideMenuManager)
+//        }
+
 
 //        if authManager.isAuthenticated {
 //            if authManager.isLoadingProfile {
 //                ProgressView("loading profile...")
 //            } else if authManager.userProfileExists == true {
-//                ContextInputView()
+//                NavigationView {
+//                    ContextInputView()
+//                        .environmentObject(authManager)
+//                        .environmentObject(spurManager)
+//                        .environmentObject(connectionManager)
+//                        .environmentObject(sideMenuManager)
+//                }
 //            } else if authManager.userProfileExists == false {
 //                OnboardingView(authManager: authManager)
 //                    .environmentObject(authManager)
@@ -94,30 +111,10 @@ struct MainAppView: View {
     @EnvironmentObject var sideMenuManager: SideMenuManager
 
     var body: some View {
-        TabView {
-            Text("Home Screen")
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
 
+        NavigationView {
             ContextInputView()
-                .tabItem {
-                    Label("Context", systemImage: "pencil.and.scribble")
-                }
-
-            Text("Profile / Settings")
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
-                .overlay(alignment: .topTrailing) {
-                     Button("Logout") {
-                         authManager.logout()
-                     }
-                     .padding()
-                }
         }
-        .onAppear {
-            print("MainAppView appeared. User: \(authManager.userId ?? "None")")
-        }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }

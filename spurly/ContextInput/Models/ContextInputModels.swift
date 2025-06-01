@@ -168,7 +168,7 @@ struct ManualTextInputView: View {
     @Binding var selectedSender: MessageSender
     let addMessageAction: () -> Void
 
-    @FocusState var isTextEditorFocused: Bool
+    var isTextEditorFocused: FocusState<Bool>.Binding
 
     var body: some View {
         VStack(spacing: 8) {
@@ -191,11 +191,10 @@ struct ManualTextInputView: View {
                     .border(Color.gray.opacity(0.3))
                     .cornerRadius(6)
                     .font(.caption)
-                    .focused($isTextEditorFocused)
+                    .focused(isTextEditorFocused)
 
                 Button(action: {
                     addMessageAction()
-                    isTextEditorFocused = false // Dismiss keyboard
                 }) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.title2)

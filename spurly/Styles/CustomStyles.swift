@@ -27,7 +27,7 @@ struct CustomTextFieldStyle: TextFieldStyle {
 
     let inputFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
     func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration.font(inputFont).foregroundStyle(Color.primaryText)
+        configuration.font(inputFont)
             .padding(.horizontal, 12)
             .padding(.vertical, 12)
             .background(Color.tertiaryBg)
@@ -100,11 +100,19 @@ struct CustomPickerStyle<SelectionValue: Hashable>: View {
     var body: some View {
         Menu { Picker(title, selection: $selection) { ForEach(options, id: \.self) { option in Text(textMapping(option)).tag(option) } } } label: {
             HStack {
-                Text(currentSelectionText).font(inputFont).foregroundColor(isPlaceholder ? placeholderColor : primaryColor)
+                Text(currentSelectionText)
+                    .font(inputFont)
+                    .foregroundColor(
+                        isPlaceholder ? placeholderColor
+                            .opacity(0.95) : primaryColor
+                    )
+                    .padding(.vertical, 3)
                     .accessibilityHint(isPlaceholder ? "empty. tap to select \(title)." : "selected: \(currentSelectionText). tap to change.")
                 Spacer(); Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundColor(.spurlySecondaryText)
+                    .opacity(0.95)
+                    .padding(.vertical, 3)
             }
             .padding(.horizontal, paddingHorizontal).padding(.vertical, paddingVertical).frame(maxWidth: .infinity).frame(minHeight: minHeight)
             .background(backgroundColor)

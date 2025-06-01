@@ -12,7 +12,7 @@ struct AddConnectionCardView<Content: View>: View {
     let addConnectionCardIcon: Image
     let addConnectionCardContent: Content
     private let cardBackgroundColor = Color.spurlyCardBackground
-    private let cardOpacity: Double = 0.8
+    private let cardOpacity: Double = 0.88
     private let cardCornerRadius: CGFloat = 12.0
     private let cardTitleFont = Font.custom("SF Pro Text", size: 18).weight(.bold)
 
@@ -41,11 +41,11 @@ struct AddConnectionCardView<Content: View>: View {
                         .foregroundColor(.primaryText)
                 }
                 .padding(.top, 15)
-                .padding(.bottom, 10)
+                .padding(.bottom, 8)
 
                 addConnectionCardContent
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
+                    .padding(.vertical, 4)
 
                 Spacer()
             }
@@ -189,29 +189,57 @@ struct AddConnectionImagesCardContent: View {
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            PhotoPickerView(
-                selectedImages: Binding(
-                    get: { connectionProfileImages ?? [] },
-                    set: { connectionProfileImages = $0.isEmpty ? nil : $0 }
-                ),
-                label: "add profile pics",
-                photoPickerToolHelp: "add screenshots of your connection's bio, prompts, or other profile info here. spurly can get the text from those and use the text when suggesting spurs."
-            )
-            .focused($connectionIsProfileImagesFocused)
+        VStack(alignment: .leading, spacing: 0) {
 
-            Divider()
-                .background(Color.spurlyHighlight.opacity(0.3))
+            if(connectionOcrImages?.count == 4) {
+                Spacer(minLength: 30)
+            }
 
             PhotoPickerView(
                 selectedImages: Binding(
                     get: { connectionOcrImages ?? [] },
                     set: { connectionOcrImages = $0.isEmpty ? nil : $0 }
                 ),
-                label: "add connection pics",
-                photoPickerToolHelp: "add pics of your connection here. spurly can infer some personality traits from those and use the traits when suggesting spurs."
+                label: "add pics",
+                photoPickerToolHelp: "add up to four screenshots of your connection's bio, prompts, or other profile info here. spurly can use text from those when suggesting spurs."
             )
+            .padding(.bottom, 1)
             .focused($connectionIsOcrImagesFocused)
+
+            if(connectionOcrImages?.count == 4) {
+                Spacer(minLength: 30)
+            }
+
+            Divider()
+                .frame(maxWidth: .infinity)
+                .frame(height: 2)
+                .background(Color.accent1)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .opacity(0.4)
+                .shadow(
+                    color: Color.bordersSeparators.opacity(0.55),
+                    radius: 5,
+                    x: 2,
+                    y: 3
+                )
+            if(connectionProfileImages?.count == 4) {
+                Spacer(minLength: 30)
+            }
+            PhotoPickerView(
+                selectedImages: Binding(
+                    get: { connectionProfileImages ?? [] },
+                    set: { connectionProfileImages = $0.isEmpty ? nil : $0 }
+                ),
+                label: "add pics",
+                photoPickerToolHelp: "add up to four pics of your connection here. spurly can use personality traits inferred from those when suggesting spurs."
+            )
+            .padding(.top, 15)
+            .focused($connectionIsProfileImagesFocused)
+
+            if(connectionProfileImages?.count == 4) {
+                Spacer(minLength: 30)
+            }
         }
         .padding(.horizontal, 5)
     }

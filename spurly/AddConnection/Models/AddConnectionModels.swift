@@ -92,27 +92,31 @@ struct AddConnectionResponse: Codable {
 struct PhotoPickerView: View {
     @Binding var selectedImages: [UIImage]
     @State private var selectedItems: [PhotosPickerItem] = []
+    @State private var newSelectedItems: [PhotosPickerItem] = []
     private let maxPhotos = 4
     let label: String
     let photoPickerToolHelp: String
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 8) {
 
 
             // Thumbnails grid
             if !selectedImages.isEmpty {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 60))], spacing: 10) {
                         ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, image in
                             ThumbnailView(image: image) {
                                 removeImage(at: index)
                             }
                         }
                     }
-                    .padding()
+
+
                 }
-            } else {
+            }
+
+            if (selectedImages.count < maxPhotos) {
                 VStack {
 
                     PhotosPicker(
@@ -121,12 +125,12 @@ struct PhotoPickerView: View {
                         matching: .images,
                         photoLibrary: .shared()
                     ) {
-                        Label("\(label) (\(selectedImages.count)/\(maxPhotos))", systemImage: "photo.on.rectangle.angled")
+                        Label("\(label) ", systemImage: "photo.on.rectangle.angled")
                             .font(.custom("SF Pro Text", size: 14).weight(.regular))
                             .padding(.horizontal)
                             .padding(.vertical, 12)
                             .background(Color.primaryButton)
-                            .foregroundColor(Color.tertiaryButton)
+                            .foregroundColor(Color.tertiaryBg)
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
@@ -142,17 +146,20 @@ struct PhotoPickerView: View {
                                 y: 5
                             )
                     }
+                    .padding(.top, 8)
                     .onChange(of: selectedItems) { newItems in
                         loadImages(from: newItems)
                     }
-
-                    Text(photoPickerToolHelp)
-                        .font(.footnote)
-                        .foregroundColor(.secondaryText)
-                        .padding(.top, 5)
-                        .shadow(color: .brandColor.opacity(0.42), radius: 4, x: 2, y: 4)
-                        .frame(maxWidth: .infinity)
+                    if selectedImages.isEmpty   {
+                        Text(photoPickerToolHelp)
+                            .font(.footnote)
+                            .foregroundColor(.secondaryText)
+                            .padding(.top, 5)
+                            .shadow(color: .brandColor.opacity(0.42), radius: 4, x: 2, y: 4)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
+                .padding(.top, 8)
             }
 
             Spacer()
@@ -176,6 +183,7 @@ struct PhotoPickerView: View {
         }
     }
 
+
     // Remove image at index
     private func removeImage(at index: Int) {
         guard index < selectedImages.count else { return }
@@ -184,6 +192,13 @@ struct PhotoPickerView: View {
         // Also remove from selectedItems to keep in sync
         if index < selectedItems.count {
             selectedItems.remove(at: index)
+        }
+    }
+
+    private func addPreviousToNewItems(previousItems: [PhotosPickerItem]) {
+
+        for item in previousItems {
+            newSelectedItems.append(item)
         }
     }
 }
@@ -200,22 +215,25 @@ struct ThumbnailView: View {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 70, height: 70)
+                .frame(width: 50, height: 50)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                 )
 
+
             // Delete button
             Button(action: onDelete) {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.white)
-                    .background(Color.red)
+                    .foregroundColor(Color.accent2)
+                    .background(Color.primaryBg)
                     .clipShape(Circle())
-                    .opacity(0.6)
+                    .opacity(0.7)
+
             }
             .offset(x: 8, y: -8)
         }
+        .padding(.top, 10)
     }
 }
