@@ -11,6 +11,7 @@ xcuserdata/
 *.xcodeproj/xcuserdata
 .idea/
 *.xcscmblueprint
+*.plist
 
 # === Swift Package Manager ===
 .build/
@@ -58,5 +59,7 @@ playground.xcworkspace
 coreSimulatorLogs/
 
 # === Firebase / GoogleService Files (manually exclude if private) ===
-# GoogleService-Info.plist
+GoogleService-Info.plist
+GoogleAuth-Info.plist
+
 
