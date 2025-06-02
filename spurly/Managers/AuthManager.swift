@@ -33,7 +33,7 @@ class AuthManager: ObservableObject {
         self.userId = KeychainHelper.standard.read(service: "com.spurly.userid", account: "user")
         self.token = KeychainHelper.standard.read(service: "com.spurly.token", account: "user")
         self.refreshToken = KeychainHelper.standard.read(service: "com.spurly.refreshtoken", account: "user")
-        self.userEmail = KeychainHelper.standard.read(service: "com.spurly.email", account: "user")
+        self.userEmail = "testEmail@email.com"//KeychainHelper.standard.read(service: "com.spurly.email", account: "user")
         self.userName = KeychainHelper.standard.read(service: "com.spurly.name", account: "user")
 
         print("AuthManager: Initialized. UserID loaded: \(userId != nil), Token loaded: \(token != nil)")

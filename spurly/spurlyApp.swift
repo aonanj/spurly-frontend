@@ -78,26 +78,26 @@ struct RootView: View {
         }
 
 
-        if authManager.isAuthenticated {
-            if authManager.isLoadingProfile {
-                ProgressView("loading profile...")
-            } else if authManager.userProfileExists == true {
-                NavigationView {
-                    ContextInputView()
-                        .environmentObject(authManager)
-                        .environmentObject(spurManager)
-                        .environmentObject(connectionManager)
-                        .environmentObject(sideMenuManager)
-                }
-            } else if authManager.userProfileExists == false {
-                OnboardingView(authManager: authManager)
-                    .environmentObject(authManager)
-            } else {
-                ProgressView("checking authentication state...")
-            }
-        } else {
-            LoginLandingView()
-        }
+//        if authManager.isAuthenticated {
+//            if authManager.isLoadingProfile {
+//                ProgressView("loading profile...")
+//            } else if authManager.userProfileExists == true {
+//                NavigationView {
+//                    ContextInputView()
+//                        .environmentObject(authManager)
+//                        .environmentObject(spurManager)
+//                        .environmentObject(connectionManager)
+//                        .environmentObject(sideMenuManager)
+//                }
+//            } else if authManager.userProfileExists == false {
+//                OnboardingView(authManager: authManager)
+//                    .environmentObject(authManager)
+//            } else {
+//                ProgressView("checking authentication state...")
+//            }
+//        } else {
+//            LoginLandingView()
+//        }
     }
 }
 
