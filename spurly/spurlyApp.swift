@@ -6,7 +6,20 @@
 //
 
 import SwiftUI
-import GoogleSignIn // <-- Import GoogleSignIn
+import GoogleSignIn
+import FirebaseCore
+import FirebaseAuth
+import FirebaseStorage
+
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+  func application(_ application: UIApplication,
+                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+    FirebaseApp.configure()
+
+    return true
+  }
+}
 
 @main
 struct spurlyApp: App {
@@ -14,8 +27,9 @@ struct spurlyApp: App {
     @StateObject private var sideMenuManager = SideMenuManager()
     @StateObject private var spurManager = SpurManager()
     @StateObject private var connectionManager = ConnectionManager()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
-    init() { // <-- Add an init method
+    init() {
         setupGoogleSignIn()
     }
 

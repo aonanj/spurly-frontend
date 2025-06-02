@@ -1,8 +1,12 @@
 //
-//  AddConnectionCards.swift
 //
-//  Author: phaeton order llc
-//  Target: spurly
+// File name: AddConnectionCards.swift
+//
+// Product / Project: spurly / spurly
+//
+// Organization: phaeton order llc
+// Bundle ID: com.phaeton-order.spurly
+//
 //
 
 import SwiftUI
@@ -185,6 +189,7 @@ struct AddConnectionImagesCardContent: View {
 
     @Binding var connectionOcrImages: [UIImage]?
     @Binding var connectionProfileImages: [UIImage]?
+    @Binding var connectionFacePhotoURL: String? // New binding for face photo URL
 
     let labelFont = Font.custom("SF Pro Text", size: 14).weight(.regular)
 
@@ -226,13 +231,18 @@ struct AddConnectionImagesCardContent: View {
             if(connectionProfileImages?.count == 4) {
                 Spacer(minLength: 30)
             }
+
+            // Updated PhotoPickerView with face processing callback
             PhotoPickerView(
                 selectedImages: Binding(
                     get: { connectionProfileImages ?? [] },
                     set: { connectionProfileImages = $0.isEmpty ? nil : $0 }
                 ),
                 label: "add pics",
-                photoPickerToolHelp: "add up to four pics of your connection here. spurly can use personality traits inferred from those when suggesting spurs."
+                photoPickerToolHelp: "add up to four pics of your connection here. spurly will automatically detect and crop their face for the connection profile.",
+                onFacePhotoProcessed: { facePhotoURL in
+                    connectionFacePhotoURL = facePhotoURL
+                }
             )
             .padding(.top, 15)
             .focused($connectionIsProfileImagesFocused)
