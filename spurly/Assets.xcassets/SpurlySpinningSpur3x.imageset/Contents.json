@@ -1,15 +1,17 @@
 {
   "images" : [
     {
+      "filename" : "SpinningSpurImage@1.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "SpinningSpurImage.png",
+      "filename" : "SpinningSpurImage@2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "SpinningSpurImage@3.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

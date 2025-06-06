@@ -1,15 +1,17 @@
 {
   "images" : [
     {
+      "filename" : "SpurlyTagText@1.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "SpurlyTagLineImage.png",
+      "filename" : "SpurlyTagText@2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "SpurlyTagText@3.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
