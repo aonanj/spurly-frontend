@@ -133,7 +133,7 @@ struct SpursView: View {
                 let iconNameToUse = getCardIconName(for: spur)
 
                 SpurDisplayCardView(
-                    title: spur.variation, // Already lowercase from SpurManager
+                    title: spur.variant, // Already lowercase from SpurManager
                     cardIconName: iconNameToUse,
                     spurText: $editedSpurTexts[currentCardIndex],
                     onCopy: {
@@ -289,37 +289,3 @@ struct SpursView: View {
     }
 }
 
-// MARK: - Preview
-#if DEBUG
-struct SpursView_Previews: PreviewProvider {
-    static var previews: some View {
-        let mockSpurManager = SpurManager()
-        let mockConnectionManager = ConnectionManager()
-        mockConnectionManager
-            .setActiveConnection(
-                connectionId: "conn123",
-                connectionName: "name"
-            )
-        // Assuming BackendSpurData is defined globally or imported
-        let mockBackendSpurs = [
-            BackendSpurData(
-                id: "id1",
-                variation: "main spur".lowercased(),
-                text: "out on bail, fresh outta jail, california dreamin'. soon as i step on scene, i'm hearin' hoochies screamin'"
-            ),
-            BackendSpurData(
-                id: "id2",
-                variation: "warm spur".lowercased(),
-                text: "fiendin' for money and alcohol, the life of a westside player, where cowards die and the strong ball"
-            ),
-            BackendSpurData(id: "id3", variation: "cool spur", text: "only in cali where we riot, not rally, to live and die. in la, we wearin' chucks, not ballys, that's right"),
-            BackendSpurData(id: "id4", variation: "banter spur", text: "famous cuz we throw grams. worldwide, recognize from long beach to rosecrans. it's westside so you know the row won't bow down to no man")
-        ]
-        mockSpurManager.loadSpurs(backendSpurData: mockBackendSpurs)
-
-        return SpursView()
-            .environmentObject(mockSpurManager)
-            .environmentObject(mockConnectionManager)
-    }
-}
-#endif

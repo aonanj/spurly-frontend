@@ -23,31 +23,31 @@ class UpdateProfileViewModel: ObservableObject {
         self.authManager = authManager
     }
 
-    func loadUserProfile(completion: @escaping (UserProfileData?) -> Void) {
-        guard let token = authManager.token, let userId = authManager.userId else {
-            completion(nil)
-            return
-        }
+    // In UpdateProfileViewModel.swift
+        func loadUserProfile(_ completion: @escaping (Result<UserProfileData, Error>) -> Void) { // No userId, token parameters
+            guard let authToken = authManager.token, let authUserId = authManager.userId else {
+                //completion(.failure()) // Or your specific error type
+                return
+            }
 
-        // Call to get existing profile data
-        NetworkService.shared.getUserProfile(userId: userId, token: token) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let profileResponse):
-                    // Convert to UserProfileData (you may need to adjust based on your actual response structure)
-                    let profileData = UserProfileData(
-                        name: profileResponse.name,
-                        age: nil, // Age might need to come from a different endpoint
-                        email: nil,
-                        userContextBlock: nil // This might need to come from a different endpoint
-                    )
-                    completion(profileData)
-                case .failure:
-                    completion(nil)
+            // Now directly uses authManager's properties without any confusion from parameters
+            NetworkService.shared.getUserProfile(userId: authUserId, token: authToken) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let profileResponse):
+                        let userProfile = UserProfileData(
+                            name: profileResponse.name,
+                            age: profileResponse.age,
+                            email: profileResponse.email,
+                            userContextBlock: profileResponse.userContextBlock
+                        )
+                        completion(.success(userProfile))
+                    case .failure(let networkError):
+                        completion(.failure(networkError))
+                    }
                 }
             }
         }
-    }
 
     func updateProfile(data: UpdateProfilePayload) {
         guard let token = authManager.token, let _ = authManager.userId else {
@@ -121,6 +121,11 @@ struct UpdateProfilePayload {
     let age: Int?
     let email: String
     let userContextBlock: String
+
+    enum CodingKeys: String, CodingKey {
+        case name, age, email
+        case userContextBlock = "user_context_block"
+    }
 }
 
 struct UpdateProfileRequest: Codable {
@@ -131,14 +136,49 @@ struct UpdateProfileRequest: Codable {
 
     enum CodingKeys: String, CodingKey {
         case name, age, email
-        case userContextBlock = "profile_text"
+        case userContextBlock = "user_context_block"
     }
 }
 
-struct UserProfileData {
+struct UserProfileData: Decodable {
     let name: String?
     let age: Int?
     let email: String?
     let userContextBlock: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name, age, email
+        case userContextBlock = "user_context_block"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        userContextBlock = try container.decodeIfPresent(String.self, forKey: .userContextBlock)
+
+        // Attempt 1: Try to decode 'age' as an Int
+        if let intValue = try? container.decode(Int.self, forKey: .age) {
+            self.age = intValue // e.g., JSON is "age": 31
+        }
+        // Attempt 2: If Int decoding failed (e.g., it was a string), try to decode as String
+        else if let stringValue = try? container.decode(String.self, forKey: .age) {
+            self.age = Int(stringValue) // e.g., JSON is "age": "31". Converts "31" to 31. If "abc", results in nil.
+        }
+
+        else {
+
+            self.age = nil
+        }
+    }
+
+    // Added memberwise initializer for manual instantiation
+    init(name: String?, age: Int?, email: String?, userContextBlock: String?) {
+        self.name = name
+        self.age = age
+        self.email = email
+        self.userContextBlock = userContextBlock
+    }
 }
 

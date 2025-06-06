@@ -18,7 +18,7 @@ class SpurManager: ObservableObject {
             // This assumes the first spur data is "Main", second is "Warm", etc.
             self.spurs = backendSpurData.enumerated().map { (index, data) -> Spur in
                 Spur(id: data.id,
-                     variation: data.variation.capitalized,
+                     variant: data.variant.capitalized,
                      text: data.text,
                      iconCategoryIndex: index) // Use the original index as the category index
             }.prefix(4).map{$0} // Ensure we only take up to 4 spurs

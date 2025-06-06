@@ -68,6 +68,7 @@ struct UpdateProfileCardView<Content: View>: View {
     }
 }
 
+@available(iOS 17.0, *)
 struct UpdateProfileCardContent: View {
     @Binding var name: String
     @Binding var age: Int?
@@ -173,14 +174,15 @@ struct UpdateProfileCardContent: View {
                     }
 
                 Spacer(minLength: 8)
-                HStack {
+                HStack(alignment: .center, spacing: 5) {
                         // Email Field
                     TextField("", text: $email)
                         .focused($emailIsFocused)
                         .font(.custom("SF Pro Text", size: 14).weight(.regular))
                         .foregroundColor(
-                            email == currentEmail ? .spurlySecondaryText : .spurlyPrimaryText
+                            email == currentEmail ? Color.spurlyPrimaryText : Color.spurlySecondaryText
                         )
+
                         .padding(.horizontal, paddingHorizontal)
                         .padding(.vertical, paddingVertical)
                         .background(

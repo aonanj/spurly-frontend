@@ -8,6 +8,7 @@
 import SwiftUI
 
 // Original CharacterLimiter for non-optional String
+@available(iOS 17.0, *)
 struct CharacterLimiter: ViewModifier {
     @Binding var text: String // Non-optional
     let limit: Int
@@ -28,6 +29,7 @@ struct CharacterLimiter: ViewModifier {
 }
 
 // OptionalCharacterLimiter for optional String (keep this as is)
+@available(iOS 17.0, *)
 struct OptionalCharacterLimiter: ViewModifier {
     @Binding var text: String? // Optional
     let limit: Int
@@ -49,6 +51,7 @@ struct OptionalCharacterLimiter: ViewModifier {
 }
 
 // Extension for View
+@available(iOS 17.0, *)
 extension View {
     // Overload for Binding<String?> (keep this as is)
     func limitInputLength(for text: Binding<String?>, limit: Int = 29) -> some View {

@@ -17,7 +17,6 @@ class AuthManager: ObservableObject {
     @Published var userName: String?
 
     // User Profile Status
-    @Published var userProfileExists: Bool? = nil
     @Published var isLoadingProfile: Bool = false
 
     // Computed property to easily check authentication status
@@ -33,7 +32,7 @@ class AuthManager: ObservableObject {
         self.userId = KeychainHelper.standard.read(service: "com.spurly.userid", account: "user")
         self.token = KeychainHelper.standard.read(service: "com.spurly.token", account: "user")
         self.refreshToken = KeychainHelper.standard.read(service: "com.spurly.refreshtoken", account: "user")
-        self.userEmail = "testEmail@email.com"//KeychainHelper.standard.read(service: "com.spurly.email", account: "user")
+        self.userEmail = KeychainHelper.standard.read(service: "com.spurly.email", account: "user")
         self.userName = KeychainHelper.standard.read(service: "com.spurly.name", account: "user")
 
         print("AuthManager: Initialized. UserID loaded: \(userId != nil), Token loaded: \(token != nil)")
@@ -48,48 +47,71 @@ class AuthManager: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
+
+#if DEBUG
+            print("PRE AuthManager.login authResponse -- userEmail: \(userEmail)")
+#endif
             // Update state from AuthResponse
-            self.userId = authResponse.user.id
+            self.userId = authResponse.user_id
             self.token = authResponse.accessToken
             self.refreshToken = authResponse.refreshToken
-            self.userEmail = authResponse.user.email
-            self.userName = authResponse.user.name
+            self.userEmail = authResponse.email
+            self.userName = authResponse.name
 
-
+#if DEBUG
+            print("POST AuthManager.login post authResponse -- userEmail: \(userEmail)")
+#endif
             // Securely store in Keychain
-            KeychainHelper.standard.save(authResponse.user.id, service: "com.spurly.userid", account: "user")
+            KeychainHelper.standard.save(authResponse.user_id, service: "com.spurly.userid", account: "user")
             KeychainHelper.standard.save(authResponse.accessToken, service: "com.spurly.token", account: "user")
 
             if let refreshToken = authResponse.refreshToken {
                 KeychainHelper.standard.save(refreshToken, service: "com.spurly.refreshtoken", account: "user")
             }
 
-            KeychainHelper.standard.save(authResponse.user.email, service: "com.spurly.email", account: "user")
+#if DEBUG
+            print("Keychain user email: \(KeychainHelper.standard.read(service: "com.spurly.email", account: "user"))")
+            print(
+                "Login: userEmail = \(userEmail); authResponse.email = \(authResponse.email)"
+            )
+#endif
 
-            if let name = authResponse.user.name {
+            if let email = authResponse.email {
+
+                KeychainHelper.standard
+                    .save(
+                        email,
+                        service: "com.spurly.email",
+                        account: "user"
+                    )
+            }
+
+            if let name = authResponse.name {
                 KeychainHelper.standard.save(name, service: "com.spurly.name", account: "user")
             }
 
 
-            print("AuthManager: User logged in - UserID: \(authResponse.user.id), Email: \(authResponse.user.email)")
+            print("AuthManager: User logged in - UserID: \(authResponse.user_id), Email: \(authResponse.email)")
 
             // Fetch profile status after login
-            self.fetchUserProfile(userId: authResponse.user.id, token: authResponse.accessToken)
+            self.fetchUserProfile(userId: authResponse.user_id, token: authResponse.accessToken)
         }
     }
 
     // Legacy login function for compatibility
-    func login(userId: String, token: String) {
+    func login(userId: String, token: String, email: String?) {
         // Create a minimal AuthResponse for backward compatibility
         let user = UserInfo(
-            id: userId,
-            email: userEmail ?? "",
-            name: userName,
+            user_id: userId,
+            userEmail: email,
+            name: self.userName,
         )
         let authResponse = AuthResponse(
             accessToken: token,
+            user_id: userId,
             refreshToken: refreshToken,
-            user: user
+            name: self.userName,
+            email: email
         )
         login(authResponse: authResponse)
     }
@@ -104,7 +126,6 @@ class AuthManager: ObservableObject {
             self.refreshToken = nil
             self.userEmail = nil
             self.userName = nil
-            self.userProfileExists = nil
             self.isLoadingProfile = false
 
             // Remove all from Keychain
@@ -152,15 +173,13 @@ class AuthManager: ObservableObject {
         guard !userId.isEmpty, !token.isEmpty else {
             print("AuthManager: Cannot fetch profile, userId or token is missing.")
             DispatchQueue.main.async { [weak self] in
-                self?.userProfileExists = false
-                self?.isLoadingProfile = false
+                  self?.isLoadingProfile = false
             }
             return
         }
 
         DispatchQueue.main.async { [weak self] in
             self?.isLoadingProfile = true
-            self?.userProfileExists = nil
         }
 
         print("AuthManager: Fetching profile for UserID: \(userId)...")
@@ -173,8 +192,7 @@ class AuthManager: ObservableObject {
 
                 switch result {
                 case .success(let profileResponse):
-                    self.userProfileExists = profileResponse.exists
-                    print("AuthManager: Profile fetch success. Profile exists: \(profileResponse.exists)")
+                    print("AuthManager: Profile fetch success.")
 
                     // Update user info if provided in profile response
                     if let name = profileResponse.name {
@@ -182,11 +200,16 @@ class AuthManager: ObservableObject {
                         KeychainHelper.standard.save(name, service: "com.spurly.name", account: "user")
                     }
 
+                    if let email = profileResponse.email {
+                        self.userEmail = email
+                    KeychainHelper.standard.save(email, service: "com.spurly.email", account: "user")
+                    }
+
+
                 case .failure(let error):
                     // Handle different error cases
                     switch error {
                     case .profileNotFound:
-                        self.userProfileExists = false
                         print("AuthManager: Profile not found.")
 
                     case .unauthorized:
@@ -199,7 +222,6 @@ class AuthManager: ObservableObject {
                         }
 
                     default:
-                        self.userProfileExists = false
                         print("AuthManager: Profile fetch failed: \(error.localizedDescription)")
                     }
                 }
@@ -210,7 +232,6 @@ class AuthManager: ObservableObject {
     // Call this after onboarding is successfully completed
     func userDidCompleteOnboarding() {
         DispatchQueue.main.async { [weak self] in
-            self?.userProfileExists = true
             print("AuthManager: User marked as having completed onboarding.")
         }
     }

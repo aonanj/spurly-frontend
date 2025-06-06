@@ -144,14 +144,3 @@ struct LoginLandingView: View {
         // and the image assets "SpurlySignInButton", "SpurlySignUpButton", etc.
     }
 }
-
-
-
-struct LoginLandingView_Previews: PreviewProvider {
-    static var previews: some View {
-        LoginLandingView()
-            .environmentObject(AuthManager())
-            // You might need to ensure your preview environment has the necessary colors.
-            // For example, by creating a temporary ColorPalette in your preview provider or ensuring assets are available.
-    }
-}

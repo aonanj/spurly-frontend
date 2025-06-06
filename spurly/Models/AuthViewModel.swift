@@ -25,7 +25,6 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
     @Published var showLoginSuccessAlert = false // Or navigate directly
-    @Published var userProfileExists: Bool?
 
     // For Sign in with Apple
     @Published var appleSignInNonce: String?
@@ -59,6 +58,7 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         errorMessage = nil
 
         // Create account with Firebase Auth
+        // TODO: Need to execute check to see if email is in use already
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
 
@@ -108,7 +108,7 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
 
                         switch result {
                         case .success(let authResponse):
-                            print("Account created successfully: UserID \(authResponse.user.id)")
+                            print("Account created successfully: UserID \(authResponse.user_id)")
                                 self.authManager
                                     .login(authResponse: authResponse)
 
@@ -133,11 +133,15 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
         isLoading = true
         errorMessage = nil
 
+
         // Sign in with Firebase Auth
-        Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
+        Auth.auth().signIn(withEmail: email, password: password) {
+ [weak self] authResult,
+ error in
             guard let self = self else { return }
 
             if let error = error {
+
                 DispatchQueue.main.async {
                     self.isLoading = false
                     self.handleFirebaseAuthError(error)
@@ -154,8 +158,11 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
             }
 
             // Get the Firebase ID token
-            user.getIDToken { [weak self] idToken, error in
+            user.getIDToken {
+ [weak self] idToken,
+ error in
                 guard let self = self else { return }
+            user
 
                 if let error = error {
                     DispatchQueue.main.async {
@@ -173,7 +180,11 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
                     return
                 }
 
-                // Send the Firebase ID token to your backend
+                if user.email != nil && user.email != "" {
+                    self.email = user.email ?? ""
+                }
+
+                    // Send the Firebase ID token to your backend
                 let request = LoginRequest(firebaseIdToken: idToken, email: self.email)
                 NetworkService.shared.loginWithFirebase(requestData: request) { [weak self] result in
                     guard let self = self else { return }
@@ -182,9 +193,16 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
                         self.isLoading = false
 
                         switch result {
-                        case .success(let authResponse):
-                            print("Login successful: UserID \(authResponse.user.id)")
-                            self.authManager.login(userId: authResponse.user.id, token: authResponse.accessToken)
+                            case .success(let authResponse):
+                                print(
+                                    "Login successful: UserID \(authResponse.user_id)"
+                                )
+                                self.authManager
+                                    .login(
+                                        userId: authResponse.user_id,
+                                        token: authResponse.accessToken,
+                                        email: user.email
+                                    )
 
                         case .failure(let error):
                             self.handleAuthError(error)
@@ -546,14 +564,13 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let profileResponse):
-                        self.userProfileExists = profileResponse.exists
+                            self.authManager.userId
                     case .failure(let error):
                         // If getUserProfile fails (e.g., 404 or other errors),
                         // we assume the profile doesn't exist for UI purposes.
                         // AuthManager's checkAuthentication might have already handled this
                         // by setting userProfileExists to false for 404.
                         // This ensures it's false if any other error occurs during profile check.
-                        self.userProfileExists = false
                         print("AuthViewModel: Error checking user profile - \(error.localizedDescription)")
                         if case .serverError(let message, let statusCode) = error {
                             print("AuthViewModel: Server error (\(statusCode)) checking profile: \(message)")
@@ -564,7 +581,6 @@ class AuthViewModel: NSObject, ObservableObject, ASAuthorizationControllerDelega
             }
         } else {
             // Not authenticated or missing details
-            userProfileExists = false
             isLoading = false // Stop loading if not authenticated
         }
     }

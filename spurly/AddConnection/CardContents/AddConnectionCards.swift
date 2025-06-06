@@ -79,6 +79,7 @@ struct AddConnectionCardView<Content: View>: View {
     }
 }
 
+@available(iOS 17.0, *)
 struct AddConnectionBasicsCardContent: View {
     @Binding var connectionName: String
     @Binding var connectionAge: Int?

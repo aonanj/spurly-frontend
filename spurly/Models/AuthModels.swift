@@ -15,7 +15,7 @@ struct CreateAccountRequest: Codable {
     let email: String
 
     enum CodingKeys: String, CodingKey {
-        case firebaseIdToken = "firebase_id_token"
+        case firebaseIdToken = "access_token"
         case email
     }
 }
@@ -25,7 +25,7 @@ struct LoginRequest: Codable {
     let email: String
 
     enum CodingKeys: String, CodingKey {
-        case firebaseIdToken = "firebase_id_token"
+        case firebaseIdToken = "access_token"
         case email
     }
 }
@@ -59,62 +59,86 @@ enum UserState {
 
 struct AuthResponse: Decodable {
     let accessToken: String
+    let user_id: String
     let refreshToken: String?
-    let user: UserInfo
+    let name: String?
+    let email: String?
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
         case refreshToken = "refresh_token"
-        case user
+        case user_id
+        case name
+        case email
     }
 }
 
 struct UserInfo: Decodable {
-    let id: String
-    let email: String
+    let user_id: String
+    let userEmail: String?
     let name: String?
 //    let emailVerified: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id
-        case email
+        case user_id = "user_id"
+        case userEmail = "email"
         case name
 //        case emailVerified = "email_verified"
     }
 }
 
 struct UserProfileResponse: Decodable {
-    let exists: Bool
     let userId: String?
     let name: String?
-    let profileCompleted: Bool?
+    let email: String?
+    let age: Int?
+    let userContextBlock: String?
 
-    // Regular initializer
-    init(exists: Bool, userId: String? = nil, name: String? = nil, profileCompleted: Bool? = nil) {
-        self.exists = exists
-        self.userId = userId
-        self.name = name
-        self.profileCompleted = profileCompleted
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case name
+        case email
+        case age
+        case userContextBlock = "user_context_block"
     }
 
-    // Handle flexible response structure
+    // Regular initializer
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // If the response just has a status, default exists to true
-        self.exists = try container.decodeIfPresent(Bool.self, forKey: .exists) ?? true
-        self.userId = try container.decodeIfPresent(String.self, forKey: .userId)
-        self.name = try container.decodeIfPresent(String.self, forKey: .name)
-        self.profileCompleted = try container.decodeIfPresent(Bool.self, forKey: .profileCompleted)
+        userId = try container.decodeIfPresent(String.self, forKey: .userId)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        userContextBlock = try container.decodeIfPresent(String.self, forKey: .userContextBlock)
+
+        // Attempt 1: Try to decode 'age' as an Int
+        if let intValue = try? container.decode(Int.self, forKey: .age) {
+            self.age = intValue // e.g., JSON is "age": 31
+        }
+        // Attempt 2: If Int decoding failed (e.g., it was a string), try to decode as String
+        else if let stringValue = try? container.decode(String.self, forKey: .age) {
+            self.age = Int(stringValue) // e.g., JSON is "age": "31". Converts "31" to 31. If "abc", results in nil.
+        }
+
+        else {
+
+            self.age = nil
+        }
     }
 
-    enum CodingKeys: String, CodingKey {
-        case exists
-        case userId = "user_id"
-        case name
-        case profileCompleted = "profile_completed"
+    // Added memberwise initializer for manual instantiation
+    init(userId: String?, name: String?, age: Int?, email: String?, userContextBlock: String?) {
+        self.userId = userId
+        self.name = name
+        self.age = age
+        self.email = email
+        self.userContextBlock = userContextBlock
     }
+
+
 }
+
+
 
 // MARK: - Request Models
 
@@ -143,7 +167,7 @@ struct AppleTokenPayload: Codable {
         case identityToken = "identity_token"
         case authorizationCode = "authorization_code"
         case email
-        case fullName = "full_name"
+        case fullName = "name"
     }
 }
 
@@ -162,7 +186,7 @@ struct OnboardingRequest: Codable {
 
     enum CodingKeys: String, CodingKey {
         case name, age
-        case userContextBlock = "profile_text"
+        case userContextBlock = "user_context_block"
     }
 }
 

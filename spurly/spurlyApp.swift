@@ -6,19 +6,55 @@
 //
 
 import SwiftUI
+import UIKit
 import GoogleSignIn
 import FirebaseCore
 import FirebaseAuth
 import FirebaseStorage
+import FirebaseAppCheck
 
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    FirebaseApp.configure()
 
-    return true
-  }
+    var window: UIWindow?
+
+    func application(_ application: UIApplication,
+                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+
+
+        FirebaseApp.configure()
+//        #if targetEnvironment(simulator)
+//
+//        print("App Check initialized with DEBUG provider for simulator.") // You are seeing this
+//
+//        // ---- ADD THIS SECTION ----
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+//            let providerFactory = AppCheckDebugProviderFactory()
+//            AppCheck.setAppCheckProviderFactory(providerFactory)
+//
+//            AppCheck.appCheck().token(forcingRefresh: true) { token, error in // <--- Change false to true
+//                if let error = error {
+//                    print("App Check (forcing refresh): Error explicitly fetching token: \(error.localizedDescription)")
+//                    if let nsError = error as NSError? {
+//                        print("App Check (forcing refresh): Explicit fetch error - Domain: \(nsError.domain), Code: \(nsError.code), UserInfo: \(nsError.userInfo)")
+//                    }
+//                } else if let token = token {
+//                    print("App Check (forcing refresh): Explicitly fetched an App Check token. Token value: \(token.token)")
+//                } else {
+//                    print("App Check (forcing refresh): Explicitly fetching token returned no token and no error.")
+//                }
+//            }
+//        }
+        // ---- END OF ADDED SECTION ----
+
+       // #else
+        // For real devices, use DeviceCheckProvider.
+        // ... (your existing real device code) ...
+ //       #endif
+
+
+        return true
+    }
 }
 
 @main
@@ -31,6 +67,9 @@ struct spurlyApp: App {
 
     init() {
         setupGoogleSignIn()
+        let providerFactory = AppCheckDebugProviderFactory()
+        AppCheck.setAppCheckProviderFactory(providerFactory)
+
     }
 
     var body: some Scene {
@@ -82,36 +121,26 @@ struct RootView: View {
     @EnvironmentObject var sideMenuManager: SideMenuManager
 
     var body: some View {
-
-        NavigationView {
-            ContextInputView()
-                .environmentObject(authManager)
-                .environmentObject(spurManager)
-                .environmentObject(connectionManager)
-                .environmentObject(sideMenuManager)
+        if authManager.isAuthenticated {
+            if authManager.isLoadingProfile {
+                ProgressView("loading profile...")
+            } else if authManager.userName != nil && authManager.userName != "" {
+                NavigationView {
+                    ContextInputView()
+                        .environmentObject(authManager)
+                        .environmentObject(spurManager)
+                        .environmentObject(connectionManager)
+                        .environmentObject(sideMenuManager)
+                }
+            } else if authManager.userName == nil || authManager.userName == "" {
+                OnboardingView(authManager: authManager)
+                    .environmentObject(authManager)
+            } else {
+                ProgressView("checking authentication state...")
+            }
+        } else {
+            LoginLandingView()
         }
-
-
-//        if authManager.isAuthenticated {
-//            if authManager.isLoadingProfile {
-//                ProgressView("loading profile...")
-//            } else if authManager.userProfileExists == true {
-//                NavigationView {
-//                    ContextInputView()
-//                        .environmentObject(authManager)
-//                        .environmentObject(spurManager)
-//                        .environmentObject(connectionManager)
-//                        .environmentObject(sideMenuManager)
-//                }
-//            } else if authManager.userProfileExists == false {
-//                OnboardingView(authManager: authManager)
-//                    .environmentObject(authManager)
-//            } else {
-//                ProgressView("checking authentication state...")
-//            }
-//        } else {
-//            LoginLandingView()
-//        }
     }
 }
 

@@ -27,6 +27,7 @@ struct ContextInputView: View {
     @State private var conversationImages: [UIImage] = []
     @State private var scale: CGFloat = 1.0
     @State var selectedSituation: String = ""
+    @State var conversationId: String = ""    
     @State var topic: String = ""
     @FocusState var isTextEditorFocused: Bool
     @FocusState var isTopicFocused: Bool
@@ -591,7 +592,7 @@ struct ContextInputView: View {
         let currentConnectionId = connectionManager.currentConnectionId
 
         let payload = SubmitContextPayload(
-            messages: conversationMessages.isEmpty ? nil : conversationMessages.map { SimplifiedMessage(sender: $0.sender.rawValue, text: $0.text) },
+            conversationId: conversationId,
             situation: selectedSituation.isEmpty ? nil : selectedSituation,
             topic: topic.isEmpty ? nil : topic,
             userId: authManager.userId,
@@ -602,7 +603,7 @@ struct ContextInputView: View {
     }
 
     private func performContextSubmission(with payload: SubmitContextPayload, token: String, isRetry: Bool = false) {
-        guard let url = URL(string: "https://your.backend/api/generate") else {
+        guard let url = URL(string: "https://spurly-middleware-280376325694.us-west2.run.app/generate") else {
             submissionError = "Invalid backend URL."
             isSubmitting = false
             return
@@ -658,11 +659,14 @@ struct ContextInputView: View {
                     return
                 }
 
+                print("RESPONSE DATA: \(responseData)")
+
                 struct BackendSpursResponse: Decodable { let spurs: [BackendSpurData]? }
 
                 do {
                     let decodedResponse = try JSONDecoder().decode(BackendSpursResponse.self, from: responseData)
                     if let receivedSpurData = decodedResponse.spurs, !receivedSpurData.isEmpty {
+                        print("SPUR DATA: \(decodedResponse.spurs)")
                         self.spurManager.loadSpurs(backendSpurData: receivedSpurData)
                     } else {
                         self.submissionError = "No spurs were generated."
@@ -726,7 +730,7 @@ struct ContextInputView: View {
     }
 
     struct SubmitContextPayload: Codable {
-        let messages: [SimplifiedMessage]?
+        let conversationId: String?
         let situation: String?
         let topic: String?
         let userId: String?

@@ -66,6 +66,7 @@ struct UpdateProfileView: View {
         return authManager.userEmail ?? ""
     }
 
+    @available(iOS 16.0, *)
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -100,16 +101,20 @@ struct UpdateProfileView: View {
 
                     // Main Card
                     UpdateProfileCardView {
-                        UpdateProfileCardContent(
-                            name: $name,
-                            age: $age,
-                            email: $email,
-                            showAgeError: $showAgeError,
-                            textEditorText: $textEditorText,
-                            textEditorDefault: textEditorDefault,
-                            textFieldDefault: nameDefault,
-                            currentEmail: currentEmail
-                        )
+                        if #available(iOS 17.0, *) {
+                            UpdateProfileCardContent(
+                                name: $name,
+                                age: $age,
+                                email: $email,
+                                showAgeError: $showAgeError,
+                                textEditorText: $textEditorText,
+                                textEditorDefault: textEditorDefault,
+                                textFieldDefault: nameDefault,
+                                currentEmail: currentEmail
+                            )
+                        } else {
+                                // Fallback on earlier versions
+                        }
                     }
                     .frame(
                         width: geometry.size.width * cardWidthMultiplier,
@@ -296,33 +301,45 @@ struct UpdateProfileView: View {
     // MARK: - Methods
 
     private func loadUserData() {
-        // Load existing user data
-        if let userName = authManager.userName, !userName.isEmpty {
-            name = userName
-        } else {
-            name = nameDefault
-        }
-
-        if let userEmail = authManager.userEmail {
-            email = userEmail
-        }
-
-        // Load profile data if available
-        viewModel.loadUserProfile { profileData in
-            if let profileData = profileData {
-                if let profileAge = profileData.age {
-                    self.age = profileAge
-                }
-                if let contextBlock = profileData.userContextBlock, !contextBlock.isEmpty {
-                    self.textEditorText = contextBlock
-                } else {
-                    self.textEditorText = textEditorDefault
-                }
+            // Load existing user data from authManager first
+            if let userName = authManager.userName, !userName.isEmpty {
+                name = userName
             } else {
-                self.textEditorText = textEditorDefault
+                name = nameDefault // Default if not in authManager
+            }
+
+            if let userEmail = authManager.userEmail {
+                email = userEmail
+            }
+            // Note: The current logic doesn't update name/email from the profile load,
+            // only age and userContextBlock. This might be intentional.
+
+            // Call loadUserProfile from the ViewModel
+            viewModel.loadUserProfile { result in // The parameter is now a 'Result'
+                switch result {
+                case .success(let userProfileData):
+                    // Successfully fetched profile data
+                    if let profileAge = userProfileData.age {
+                        self.age = profileAge
+                    }
+                    // Set textEditorText based on userContextBlock
+                    if let contextBlock = userProfileData.userContextBlock, !contextBlock.isEmpty {
+                        self.textEditorText = contextBlock
+                    } else {
+                        // If contextBlock is nil or empty, use the default placeholder
+                        self.textEditorText = textEditorDefault
+                    }
+
+                case .failure(let error):
+                    // Handle the error, e.g., by showing an error message to the user
+                    print("Failed to load user profile: \(error.localizedDescription)")
+                    // You can use your existing error overlay system
+                    self.errorMessageTitle = "Profile Load Failed"
+                    self.errorMessage = "Could not load your profile details. Please try again later. Details: \(error.localizedDescription)"
+                    self.showErrorOverlay = true
+                }
             }
         }
-    }
 
     private func submit() {
         hideKeyboard()

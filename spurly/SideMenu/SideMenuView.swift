@@ -158,7 +158,7 @@
                         .padding(.horizontal, 8)
                         .opacity(0.4)
                         .shadow(color: Color.black.opacity(0.55), radius: 3, x: 2, y: 2)
-                    Text(authManager.userId ?? "guest") // Using userId, should be email/name
+                    Text(authManager.userName ?? "guest") // Using userId, should be email/name
                         .font(.system(size: 17, weight: .medium))
                         .italic() // Reduced size
                         .foregroundColor(.secondaryText) //

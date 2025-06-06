@@ -200,13 +200,13 @@ class BackendProxyStorageService {
         }
 
         #if DEBUG
-        let baseURL = "https://staging-api.yourbackend.com/api"
+        let baseURL = "https://spurly-middleware-280376325694.us-west2.run.app"
         #else
-        let baseURL = "https://api.yourbackend.com/api"
+        let baseURL = "https://spurly-middleware-280376325694.us-west2.run.app"
         #endif
 
         // Updated URL to match the new endpoint
-        guard let url = URL(string: "\(baseURL)/connection/upload-face-photo") else {
+        guard let url = URL(string: "\(baseURL)/connections/upload-face-photo") else {
             completion(.failure(NSError(domain: "BackendProxyStorageService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
             return
         }

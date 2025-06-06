@@ -227,12 +227,6 @@ struct OnboardingView: View {
                 self.showErrorOverlay = true
             }
         }
-        .onReceive(authManager.$userProfileExists) { profileExists in
-            if profileExists == true {
-                // Profile successfully created, navigation will be handled by parent view
-                print("OnboardingView: Profile created successfully")
-            }
-        }
     }
 
     // MARK: - Methods

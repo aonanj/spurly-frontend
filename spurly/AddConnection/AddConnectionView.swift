@@ -469,7 +469,7 @@ struct AddConnectionView: View {
         let connectionPayload = AddConnectionPayload(
             connectionName: nameForConnection,
             connectionAge: connectionAge,
-            connectionContextBlock: connectionContextBlock,
+            connectionContextBlock: connectionContextBlock == textEditorDefault ? "" : connectionName,
             connectionOcrImages: connectionOcrImages,
             connectionProfileImages: connectionProfileImages,
             connectionFacePhotoURL: connectionFacePhotoURL // Include face photo URL
@@ -485,9 +485,9 @@ struct AddConnectionView: View {
         }
 
         #if DEBUG
-        let baseURL = "https://staging-api.yourbackend.com/api"
+        let baseURL = "https://spurly-middleware-280376325694.us-west2.run.app"
         #else
-        let baseURL = "https://api.yourbackend.com/api"
+        let baseURL = "https://spurly-middleware-280376325694.us-west2.run.app"
         #endif
 
         guard let url = URL(string: "\(baseURL)/connections/create") else {

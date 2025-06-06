@@ -61,7 +61,7 @@ class NetworkService {
     private init() {
 
         //Configure bsaeURL
-        baseURL = "myapi.com"
+        baseURL = "https://spurly-middleware-280376325694.us-west2.run.app"
 
         // Configure session with timeout
         let configuration = URLSessionConfiguration.default
@@ -84,7 +84,7 @@ class NetworkService {
 
     func createAccountWithFirebase(requestData: CreateAccountRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         performRequest(
-            endpoint: "auth/firebase/register",
+            endpoint: "api/auth/firebase/register",
             method: .post,
             body: requestData,
             completion: completion
@@ -93,7 +93,7 @@ class NetworkService {
 
     func loginWithFirebase(requestData: LoginRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         performRequest(
-            endpoint: "auth/firebase/login",
+            endpoint: "api/auth/firebase/login",
             method: .post,
             body: requestData,
             completion: completion
@@ -104,7 +104,7 @@ class NetworkService {
 
     func createAccount(requestData: CreateAccountRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         performRequest(
-            endpoint: "auth/register",
+            endpoint: "api/auth/register",
             method: .post,
             body: requestData,
             completion: completion
@@ -113,7 +113,7 @@ class NetworkService {
 
     func login(requestData: LoginRequest, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         performRequest(
-            endpoint: "auth/login",
+            endpoint: "api/auth/login",
             method: .post,
             body: requestData,
             completion: completion
@@ -122,7 +122,7 @@ class NetworkService {
 
     func getUserProfile(userId: String, token: String, completion: @escaping (Result<UserProfileResponse, NetworkError>) -> Void) {
         performRequest(
-            endpoint: "profile/\(userId)",
+            endpoint: "api/profile/\(userId)",
             method: .get,
             authToken: token,
             completion: completion
@@ -133,7 +133,7 @@ class NetworkService {
     func signInWithGoogle(idToken: String, serverAuthCode: String?, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         let payload = GoogleTokenPayload(idToken: idToken, serverAuthCode: serverAuthCode)
         performRequest(
-            endpoint: "auth/google",
+            endpoint: "api/auth/google",
             method: .post,
             body: payload,
             completion: completion
@@ -149,7 +149,7 @@ class NetworkService {
             fullName: fullName
         )
         performRequest(
-            endpoint: "auth/apple",
+            endpoint: "api/auth/apple",
             method: .post,
             body: payload,
             completion: completion
@@ -160,7 +160,7 @@ class NetworkService {
     func signInWithFacebook(accessToken: String, completion: @escaping (Result<AuthResponse, NetworkError>) -> Void) {
         let payload = FacebookTokenPayload(accessToken: accessToken)
         performRequest(
-            endpoint: "auth/facebook",
+            endpoint: "api/auth/facebook",
             method: .post,
             body: payload,
             completion: completion
@@ -169,7 +169,7 @@ class NetworkService {
 
     func submitOnboardingProfile(requestData: OnboardingRequest, authToken: String, completion: @escaping (Result<OnboardingResponse, NetworkError>) -> Void) {
         performRequest(
-            endpoint: "onboarding",
+            endpoint: "api/onboarding",
             method: .post,
             body: requestData,
             authToken: authToken,
@@ -188,7 +188,7 @@ class NetworkService {
 
         let request = RefreshTokenRequest(refreshToken: refreshToken)
         performRequest(
-            endpoint: "auth/refresh",
+            endpoint: "api/auth/refresh",
             method: .post,
             body: request,
             completion: completion
@@ -240,6 +240,7 @@ class NetworkService {
         request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+
 
         // Add auth token if provided
         if let token = authToken {
@@ -334,7 +335,13 @@ class NetworkService {
             if httpResponse.statusCode == 204 || data.isEmpty {
                 // For endpoints that return no content on success
                 if T.self == UserProfileResponse.self {
-                    let emptyResponse = UserProfileResponse(exists: true, userId: nil, name: nil, profileCompleted: nil)
+                    let emptyResponse = UserProfileResponse(
+                        userId: nil,
+                        name: nil,
+                        age: nil,
+                        email: nil,
+                        userContextBlock: nil
+                    )
                     completion(.success(emptyResponse as! T))
                     return
                 }
